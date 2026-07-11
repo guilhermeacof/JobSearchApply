@@ -1,0 +1,65 @@
+========================================================
+  PAINEL DE CANDIDATURAS — como usar
+========================================================
+
+PARA O DIA A DIA (usuário)
+--------------------------------------------------------
+1. Dê DUPLO-CLIQUE no arquivo "Abrir Painel.bat" que está na
+   RAIZ do projeto (a pasta principal, um nível acima desta).
+2. Uma janela preta abre (é o motor do painel) e, em seguida,
+   o painel abre sozinho no seu navegador.
+3. Use os botões. Deixe a janela preta aberta enquanto usa.
+4. Para fechar tudo, feche a janela preta.
+
+O painel NÃO envia nada sozinho: ele encontra as vagas,
+avalia e escreve o currículo e a carta. O clique final de
+"enviar" no site da empresa é sempre seu.
+
+
+INSTALAÇÃO (feita UMA VEZ, por alguém com um pouco de prática)
+--------------------------------------------------------
+Ao abrir o "Abrir Painel.bat", a janela preta CONFERE e mostra
+quais destes programas estão instalados. O painel baixa sozinho
+as dependências do próprio projeto (as ferramentas de busca),
+mas os 4 programas abaixo precisam ser instalados por você,
+pois exigem administrador e/ou login:
+
+  1. Node.js  (obrigatório)
+     Baixe e instale: https://nodejs.org  (versão 18 ou maior)
+
+  2. Bun  (obrigatório)
+     No PowerShell, cole e rode:
+        powershell -c "irm bun.sh/install.ps1 | iex"
+
+  3. Claude Code  (obrigatório, precisa estar LOGADO)
+     Instale: https://claude.com/claude-code
+     Depois, no terminal, rode  claude  e faça login numa conta
+     com créditos/assinatura.
+
+  4. LaTeX / MiKTeX  (para gerar os PDFs do currículo)
+     Baixe e instale: https://miktex.org
+
+Para conferir se o Claude Code está acessível, abra o
+Prompt de Comando e digite:  claude --version
+Se aparecer um número de versão, está pronto.
+
+DEPOIS de instalar os 4, é só dar duplo-clique no "Abrir Painel.bat"
+de novo — na primeira vez ele baixa as dependências do projeto
+(mostrando o progresso) e abre o painel.
+
+Se o comando "claude" não for reconhecido, descubra o caminho
+completo do executável e edite a 1ª linha de configuração no
+"server.js": troque
+        const CLAUDE_BIN = process.env.CLAUDE_BIN || "claude";
+pelo caminho, por exemplo:
+        const CLAUDE_BIN = "C:\\Users\\SEU_USUARIO\\.local\\bin\\claude.exe";
+
+
+OBSERVAÇÕES
+--------------------------------------------------------
+- O painel roda 100% local (endereço 127.0.0.1:4599). Nada
+  é publicado na internet; ninguém de fora acessa.
+- Cada ação consome créditos da sua conta Claude, porque é o
+  Claude que faz o trabalho pesado.
+- As ações podem levar alguns minutos (o assistente pesquisa,
+  escreve e compila os documentos). É normal.

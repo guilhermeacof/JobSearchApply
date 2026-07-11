@@ -17,6 +17,31 @@ Este fork foi adaptado e é mantido por Guilherme Cançado.
   Conseguiu o emprego? Talvez dois.</i> ☕
 </p>
 
+## 🖱️ Jeito mais simples (para leigos): é só clicar
+
+Se você não quer digitar nenhum comando, use o **Painel de Candidaturas** — uma tela com botões que faz o trabalho por você.
+
+### Como abrir
+
+1. Baixe o projeto para o seu computador.
+2. Dê **duplo-clique** em **`Abrir Painel.bat`** (na raiz do projeto).
+3. Uma janela preta abre (é o motor do painel — **deixe-a aberta**) e o painel abre sozinho no seu navegador.
+4. Para fechar tudo, feche a janela preta.
+
+### Como usar
+
+1. **Envie seu currículo** (PDF) e clique em **Montar meu perfil** — o assistente lê e organiza tudo sozinho.
+2. **Escreva o cargo** que você procura (ex.: "Engenheiro de Software"). É obrigatório para buscar. O assistente pesquisa sozinho **todas as formas de escrever esse cargo** (Sênior, Sr, siglas, inglês).
+3. Clique em **Buscar novas vagas** — ele traz as vagas e dá uma **nota de 0 a 100** para cada uma.
+4. Clique numa vaga para ver **por que aquela nota** e **o que falta para 100%**. Marque o que você realmente tem para o assistente incluir no currículo e reavaliar.
+5. Clique em **Preparar candidatura** — ele gera o currículo e a carta sob medida. O **envio final** você confirma pessoalmente no site da empresa.
+
+> As vagas em que você já se candidatou aparecem **marcadas em verde**, para você não se inscrever duas vezes.
+
+**Instalação (só uma vez, por alguém com prática):** o painel depende do Claude Code (logado), Node.js, Bun e LaTeX instalados na máquina. Passo a passo em [`painel/LEIA-ME.txt`](../painel/LEIA-ME.txt).
+
+---
+
 ## O que é isto
 
 Esta é uma ferramenta de apoio para quem procura emprego. Ela ajuda você a organizar seu perfil, buscar vagas e criar um currículo e uma carta de apresentação personalizados automaticamente.

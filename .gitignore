@@ -1,0 +1,9 @@
+# Flag local: marca que as dependências do projeto já foram baixadas.
+# Não deve ir para o Git — assim um clone novo baixa as dependências no primeiro clique.
+painel/.deps-ok
+
+# Estado local do usuário (cargo-alvo escolhido no painel). Cada um preenche o seu.
+painel/config.json
+
+# node_modules das CLIs (baixados no primeiro uso)
+**/node_modules/
