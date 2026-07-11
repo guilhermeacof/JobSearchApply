@@ -19,25 +19,28 @@ Este fork foi adaptado e é mantido por Guilherme Cançado.
 
 ## O que é isto
 
-Um fluxo de trabalho estruturado que transforma Claude Code em um assistente completo de candidatura de emprego. O fluxo central (autoavaliação, avaliação de adequação e o pipeline redator-revisor) é **independente de idioma e país**. As habilidades de busca por portais de emprego são construídas para o mercado dinamarquês (Jobindex, Jobnet, Akademikernes Jobbank, etc.), mas o padrão foi projetado para ser trocado pelos seus portais locais.
+Esta é uma ferramenta de apoio para quem procura emprego. Ela ajuda você a organizar seu perfil, buscar vagas e criar um currículo e uma carta de apresentação personalizados automaticamente.
+
+O projeto foi adaptado para o Brasil e usa portais como Gupy, Vagas.com.br, LinkedIn e Freehire para buscar vagas. Você não precisa ser um especialista em tecnologia para usar: basta seguir os passos do guia.
+
+O uso básico é simples:
 
 ```
 /setup          /scrape              /apply <url>
   |                |                     |
   v                v                     v
-Preencha       Busque vagas         Avalie adequação
-seu perfil     nos portais          Avalie e recomende
-  |                |                     |
-  v                v                     v
-Perfil pronto  Apresente matches    Elabore CV + Carta de Apresentação
-               com notas de fit     (LaTeX, personalizado)
-                   |                     |
-                   v                     v
-               Escolha uma vaga      Agente revisor critique
-               -> /apply            -> Revise -> Resultado final
+Conte quem você   Busque vagas        Candidate-se a uma vaga
+é e o que faz     que combinam com    usando a URL da vaga
+                  seu perfil
 ```
 
-A estrutura codifica práticas recomendadas de orientação de carreira, incluindo critérios de avaliação estruturados, enquadramento de carta de apresentação com visão futura e benchmark salarial opcional.
+Passo a passo para usar:
+
+1. `/setup` — diga quem você é e carregue seus documentos.
+2. `/scrape` — deixe a ferramenta encontrar vagas para você.
+3. `/apply <URL>` — peça para a ferramenta redigir seu currículo e carta de apresentação para uma vaga específica.
+
+A ferramenta também revisa o resultado e ajusta os documentos para ficar mais profissional.
 
 ## Pré-requisitos
 
@@ -91,7 +94,7 @@ claude
 /setup
 ```
 
-`/setup` oferece três caminhos: ler sua pasta `documents/` se ela estiver preenchida (CV em PDF, exportação do LinkedIn, diplomas, cartas de referência, candidaturas anteriores), importar um único CV colado no chat ou seguir uma entrevista. Ele detecta automaticamente o que você tem e pergunta. O modo de pasta de documentos é idempotente e seguro para rodar novamente à medida que você adiciona mais material; veja `documents/README.md` para o layout.
+Antes de rodar `/setup`, coloque seu currículo (PDF ou `.tex`) em `documents/cv/`. O `/setup` oferece três caminhos: ler sua pasta `documents/` se ela estiver preenchida (CV em PDF, exportação do LinkedIn, diplomas, cartas de referência, candidaturas anteriores), importar um único CV colado no chat ou seguir uma entrevista. Ele detecta automaticamente o que você tem e pergunta. O modo de pasta de documentos é idempotente e seguro para rodar novamente à medida que você adiciona mais material; veja `documents/README.md` para o layout.
 
 ### 4. Busque vagas
 
