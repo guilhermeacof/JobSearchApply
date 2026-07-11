@@ -1,23 +1,23 @@
-# Salary Benchmark Tool
+# Ferramenta de Benchmark Salarial
 
-## What is this?
+## O que é isso?
 
-The salary lookup tool (`salary_lookup.py`) lets you benchmark company salaries against a baseline from your own data. It's used during the `/apply` workflow to show how a company's compensation compares to market rates.
+A ferramenta de consulta salarial (`salary_lookup.py`) permite comparar os salários das empresas com uma linha de base a partir dos seus próprios dados. Ela é usada durante o fluxo `/apply` para mostrar como a remuneração da empresa se compara às taxas de mercado.
 
-**This tool is optional.** If you don't have salary data, the salary step is simply skipped during `/apply`.
+**Esta ferramenta é opcional.** Se você não tiver dados salariais, a etapa de salário é simplesmente ignorada durante o `/apply`.
 
-## How it works
+## Como funciona
 
-The tool reads a `salary_data.json` file in the repo root containing company salary benchmarks. It uses fuzzy matching to find companies by name, handling Danish/Nordic characters, legal suffixes (A/S, ApS), and common spelling variations.
+A ferramenta lê um arquivo `salary_data.json` na raiz do repositório contendo benchmarks salariais de empresas. Ela usa correspondência difusa para encontrar empresas pelo nome, tratando caracteres dinamarqueses/nórdicos, sufixos legais (A/S, ApS) e variações de grafia comuns.
 
-The data format supports any index-based or absolute salary data. For example:
-- Index 100 = median salary, higher is better
-- Absolute salary values in your currency
-- Any custom metric you want to track
+O formato de dados suporta qualquer dado salarial baseado em índice ou valor absoluto. Por exemplo:
+- Índice 100 = salário médio, valor maior é melhor
+- Valores salariais absolutos na sua moeda
+- Qualquer métrica personalizada que você quiser acompanhar
 
-## Data format
+## Formato dos dados
 
-The tool expects `salary_data.json` with this structure:
+A ferramenta espera `salary_data.json` com esta estrutura:
 
 ```json
 {
@@ -47,25 +47,25 @@ The tool expects `salary_data.json` with this structure:
 }
 ```
 
-### Fields
+### Campos
 
-- **metadata.source**: Where the data comes from (for reference)
-- **metadata.index_baseline**: The baseline value (e.g., 100 for index-based data)
-- **metadata.index_label**: Label for the index column in output
-- **metadata.baseline_description**: Human-readable explanation of the baseline
-- **companies[].company**: Company name (required)
-- **companies[].city**: City/location (optional, used for filtering)
-- **companies[].categories**: Named salary categories, each with `count` and/or `index`
+- **metadata.source**: De onde vêm os dados (para referência)
+- **metadata.index_baseline**: O valor de referência (por exemplo, 100 para dados baseados em índice)
+- **metadata.index_label**: Rótulo para a coluna de índice na saída
+- **metadata.baseline_description**: Explicação em linguagem natural da linha de base
+- **companies[].company**: Nome da empresa (obrigatório)
+- **companies[].city**: Cidade/localização (opcional, usado para filtragem)
+- **companies[].categories**: Categorias salariais nomeadas, cada uma com `count` e/ou `index`
 
-## Setup options
+## Opções de configuração
 
-### Option A: Create salary_data.json manually
+### Opção A: Crie `salary_data.json` manualmente
 
-Create the file by hand with data from any source: union statistics, Glassdoor, salary surveys, networking, or personal research.
+Crie o arquivo manualmente com dados de qualquer fonte: estatísticas sindicais, Glassdoor, pesquisas salariais, networking ou pesquisa pessoal.
 
-### Option B: Convert from Excel
+### Opção B: Converter de Excel
 
-If you have salary data in an Excel file:
+Se você tiver dados salariais em um arquivo Excel:
 
 ```bash
 pip install openpyxl
@@ -75,15 +75,15 @@ python3 tools/convert_salary_excel.py path/to/salary-data.xlsx \
   --baseline-desc "Index 100 = median salary"
 ```
 
-On Windows, use `py` if that is how Python is exposed on your PATH. If your system uses `python` instead of `python3`, substitute that in the examples.
+No Windows, use `py` se for assim que o Python estiver exposto no PATH. Se seu sistema usar `python` em vez de `python3`, substitua nos exemplos.
 
-The converter auto-detects the Excel layout:
-- Looks for a "Company"/"Firma" column and an optional "City"/"By" column
-- Treats remaining columns as salary data (auto-pairs count/index columns)
+O conversor detecta automaticamente o layout do Excel:
+- Busca uma coluna "Company"/"Firma" e uma coluna opcional "City"/"By"
+- Trata as colunas restantes como dados salariais (faz o pareamento automático de colunas `count`/`index`)
 
-### Option C: Build from research
+### Opção C: Construa a partir da pesquisa
 
-Start with an empty template and add companies as you research them:
+Comece com um modelo vazio e adicione empresas conforme você as pesquisa:
 
 ```json
 {
@@ -106,7 +106,7 @@ Start with an empty template and add companies as you research them:
 }
 ```
 
-## Usage
+## Uso
 
 ```bash
 python3 salary_lookup.py "Novo Nordisk"
@@ -115,8 +115,8 @@ python3 salary_lookup.py "COWI" --json
 python3 salary_lookup.py --list-all
 ```
 
-## Important notes
+## Observações importantes
 
-- The data file (`salary_data.json`) is **excluded from git** (see `.gitignore`). Your salary data may be proprietary or confidential.
-- If the data file is missing, `salary_lookup.py` exits with a helpful error message and the `/apply` workflow skips the salary benchmark step.
-- The fuzzy matcher handles Danish company name variations: legal suffixes, Nordic characters, anglicized spellings, and partial matches.
+- O arquivo de dados (`salary_data.json`) é **excluído do git** (veja `.gitignore`). Seus dados salariais podem ser proprietários ou confidenciais.
+- Se o arquivo de dados estiver ausente, `salary_lookup.py` encerra com uma mensagem de erro útil e o fluxo `/apply` ignora a etapa de benchmark salarial.
+- O matcher difuso trata variações de nomes de empresas dinamarquesas: sufixos legais, caracteres nórdicos, grafias anglicadas e correspondências parciais.

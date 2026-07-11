@@ -72,7 +72,7 @@ jobs:
     # passes instead of hard-failing (the same graceful-skip pattern the
     # workflow uses for optional tools). Enabling Dependency graph under
     # Settings -> Advanced Security activates the real check.
-    if: github.event_name == 'pull_request' && github.repository == 'MadsLorentzen/ai-job-search'
+    if: github.event_name == 'pull_request' && github.repository == '<owner>/ai-job-search'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -122,7 +122,7 @@ jobs:
             exit 1
           fi
       - name: Assert exact page counts (upstream template only)
-        if: github.repository == 'MadsLorentzen/ai-job-search'
+        if: github.repository == '<owner>/ai-job-search'
         run: |
           grep -q 'Output written on main_example.pdf (2 pages' cv/main_example.log \
             || { echo '::error::cv/main_example.tex no longer compiles to exactly 2 pages'; exit 1; }
@@ -150,7 +150,7 @@ jobs:
 
   placeholder-integrity:
     name: Placeholder integrity (upstream template only)
-    if: github.repository == 'MadsLorentzen/ai-job-search'
+    if: github.repository == '<owner>/ai-job-search'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4

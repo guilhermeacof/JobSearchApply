@@ -1,76 +1,66 @@
-<p align="center">
+﻿<p align="center">
   <img src="claude_animation.gif" alt="AI Job Search Assistant" width="200">
 </p>
 
 # AI Job Search
 
-<p align="center">
-  <a href="https://trendshift.io/repositories/43622?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-43622" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/43622/daily" alt="MadsLorentzen%2Fai-job-search | Trendshift" width="250" height="55"/></a>
-</p>
+Uma estrutura de candidatura de emprego movida a IA construída sobre [Claude Code](https://claude.com/claude-code). Faça fork, preencha seu perfil e deixe o Claude avaliar anúncios, adaptar seu currículo, redigir cartas de apresentação e prepará-lo para entrevistas.
 
-[![CI](https://github.com/MadsLorentzen/ai-job-search/actions/workflows/ci.yml/badge.svg)](https://github.com/MadsLorentzen/ai-job-search/actions/workflows/ci.yml)
+Este fork foi adaptado e é mantido por Guilherme Cançado.
 
-An AI-powered job application framework built on [Claude Code](https://claude.com/claude-code). Fork it, fill in your profile, and let Claude evaluate job postings, tailor your CV, write cover letters, and prepare you for interviews.
-
-> Note: This is an independent open-source project and is not affiliated with, endorsed by, sponsored by, or maintained by Anthropic. Anthropic and Claude Code are referenced only to describe the toolchain this workflow uses.
+> Observação: este é um projeto open source independente e não é afiliado, endossado, patrocinado ou mantido pela Anthropic. Anthropic e Claude Code são referenciados apenas para descrever a cadeia de ferramentas que este fluxo utiliza.
 >
-> This project has **no affiliated cryptocurrency, token, or paid sponsorship program**. Anything claiming otherwise is unauthorized and should be treated as a scam. The only ways to support the project are the Ko-fi link below and contributing on GitHub.
+> Este projeto não tem **nenhum programa de criptomoeda, token ou patrocínio pago associado**. Qualquer afirmação em contrário não é autorizada e deve ser tratada como golpe. As únicas formas de apoiar o projeto são o link do Ko-fi abaixo e contribuir no GitHub.
 
 <p align="center">
-  <i>Did this save you a Sunday of cover-letter writing? Consider a coffee.<br>
-  Did it land you the job? Maybe two.</i> ☕
+  <i>Isto economizou um domingo inteiro de escrever cartas de apresentação? Considere um café.<br>
+  Conseguiu o emprego? Talvez dois.</i> ☕
 </p>
 
-<p align="center">
-  <a href="https://ko-fi.com/madslorentzen">
-    <img src="https://storage.ko-fi.com/cdn/kofi3.png?v=6" alt="Buy me a coffee at ko-fi.com" height="40">
-  </a>
-</p>
+## O que é isto
 
-## What this is
-
-A structured workflow that turns Claude Code into a full-stack job application assistant. The core workflow (self-profiling, fit evaluation, and the drafter-reviewer application pipeline) is **language- and country-agnostic**. The job portal search skills are built for the Danish market (Jobindex, Jobnet, Akademikernes Jobbank, etc.), but the pattern is designed to be swapped for your local job boards.
+Um fluxo de trabalho estruturado que transforma Claude Code em um assistente completo de candidatura de emprego. O fluxo central (autoavaliação, avaliação de adequação e o pipeline redator-revisor) é **independente de idioma e país**. As habilidades de busca por portais de emprego são construídas para o mercado dinamarquês (Jobindex, Jobnet, Akademikernes Jobbank, etc.), mas o padrão foi projetado para ser trocado pelos seus portais locais.
 
 ```
 /setup          /scrape              /apply <url>
   |                |                     |
   v                v                     v
-Fill in        Search job           Evaluate fit
-your profile   portals              Score & recommend
+Preencha       Busque vagas         Avalie adequação
+seu perfil     nos portais          Avalie e recomende
   |                |                     |
   v                v                     v
-Profile        Present matches      Draft CV + Cover Letter
-files ready    with fit ratings     (LaTeX, tailored)
+Perfil pronto  Apresente matches    Elabore CV + Carta de Apresentação
+               com notas de fit     (LaTeX, personalizado)
                    |                     |
                    v                     v
-               Pick a match         Reviewer agent critiques
-               -> /apply            -> Revise -> Final output
+               Escolha uma vaga      Agente revisor critique
+               -> /apply            -> Revise -> Resultado final
 ```
 
-The framework encodes career guidance best practices, including structured evaluation criteria, forward-looking cover letter framing, and optional salary benchmarking.
+A estrutura codifica práticas recomendadas de orientação de carreira, incluindo critérios de avaliação estruturados, enquadramento de carta de apresentação com visão futura e benchmark salarial opcional.
 
-## Prerequisites
+## Pré-requisitos
 
 - [Claude Code](https://claude.com/claude-code) (CLI)
 - Python 3.10+
-- [Bun](https://bun.sh) (for job search CLI tools)
-- LaTeX distribution with `lualatex` and `xelatex`: [TeX Live](https://tug.org/texlive/), [MacTeX](https://tug.org/mactex/), [TinyTeX](https://yihui.org/tinytex/), or [MiKTeX](https://miktex.org/). The CV compiles with `lualatex` (pdflatex often fails on modern MiKTeX installs with `fontawesome5` font-expansion errors); the cover letter compiles with `xelatex` because `cover.cls` requires `fontspec`. If using a minimal TeX install such as TinyTeX or BasicTeX, install the extra packages listed in [SETUP.md](SETUP.md#minimal-tex-install-tinytexbasictex).
-- Optional: `pdftotext` from [poppler](https://poppler.freedesktop.org/) (macOS: `brew install poppler`, Debian/Ubuntu: `apt install poppler-utils`, Windows: `choco install poppler`) — used by `/apply`'s ATS parseability check on the compiled CV. If missing, the check degrades gracefully to a visual keyword review.
+- [Bun](https://bun.sh) (para ferramentas CLI de busca de vagas)
+- Distribuição LaTeX com `lualatex` e `xelatex`: [TeX Live](https://tug.org/texlive/), [MacTeX](https://tug.org/mactex/), [TinyTeX](https://yihui.org/tinytex/) ou [MiKTeX](https://miktex.org/). O CV compila com `lualatex` (pdflatex frequentemente falha em instalações modernas do MiKTeX com erros de expansão da fonte `fontawesome5`); a carta de apresentação compila com `xelatex` porque `cover.cls` requer `fontspec`. Se estiver usando uma instalação TeX mínima, como TinyTeX ou BasicTeX, instale os pacotes extras listados em [SETUP.md](SETUP.md#minimal-tex-install-tinytexbasictex).
+- Opcional: `pdftotext` do [poppler](https://poppler.freedesktop.org/) (macOS: `brew install poppler`, Debian/Ubuntu: `apt install poppler-utils`, Windows: `choco install poppler`) — usado pela verificação de legibilidade ATS do `/apply` no CV compilado. Se estiver ausente, a verificação degrada graciosamente para uma revisão visual de palavras-chave.
 
-## Quick start
+## Início rápido
 
-### 1. Fork and clone
+### 1. Faça fork e clone
 
 ```bash
-gh repo fork MadsLorentzen/ai-job-search --clone
+gh repo fork <owner>/ai-job-search --clone
 cd ai-job-search
 ```
 
-### 2. Install job search tools
+### 2. Instale as ferramentas de busca de vagas
 
-> This fork targets the **Brazilian market**: `gupy-search` (portal.gupy.io) and
-> `vagas-search` (Vagas.com.br) replace the upstream Danish portals, which are parked
-> in `.agents/skills-disabled/`.
+> Este fork é direcionado para o **mercado brasileiro**: `gupy-search` (portal.gupy.io) e
+> `vagas-search` (Vagas.com.br) substituem os portais dinamarqueses originais, que estão estacionados
+> em `.agents/skills-disabled/`.
 
 PowerShell:
 
@@ -91,245 +81,244 @@ for tool in gupy-search vagas-search linkedin-search freehire-search; do
 done
 ```
 
-For `linkedin-search` and `freehire-search` the install is optional: both have zero runtime dependencies and run with plain `bun`; `bun install` only pulls TypeScript dev types.
+Para `linkedin-search` e `freehire-search`, a instalação é opcional: ambos não têm dependências de runtime e funcionam com `bun` puro; `bun install` apenas baixa tipos de desenvolvimento do TypeScript.
 
-### 3. Set up your profile
+### 3. Configure seu perfil
 
 ```bash
 claude
-# Then inside Claude Code:
+# Então dentro do Claude Code:
 /setup
 ```
 
-`/setup` offers three paths: read your `documents/` folder if you have one populated (CV PDF, LinkedIn export, diplomas, reference letters, past applications), import a single CV pasted in chat, or walk through an interview. It auto-detects what you have and asks. Documents-folder mode is idempotent and safe to re-run as you add more material; see `documents/README.md` for the layout.
+`/setup` oferece três caminhos: ler sua pasta `documents/` se ela estiver preenchida (CV em PDF, exportação do LinkedIn, diplomas, cartas de referência, candidaturas anteriores), importar um único CV colado no chat ou seguir uma entrevista. Ele detecta automaticamente o que você tem e pergunta. O modo de pasta de documentos é idempotente e seguro para rodar novamente à medida que você adiciona mais material; veja `documents/README.md` para o layout.
 
-### 4. Search for jobs
+### 4. Busque vagas
 
 ```bash
 /scrape
 ```
 
-This searches multiple job portals for positions matching your profile, deduplicates results, and presents them sorted by fit. Pick a match to run `/apply` on it directly — or, when a scrape returns more jobs than you want to eyeball, run `/rank` to batch-score them all against the fit framework and get a ranked shortlist first.
+Isso busca vários portais de emprego por posições compatíveis com seu perfil, deduplica resultados e os apresenta ordenados por adequação. Escolha uma vaga para executar `/apply` diretamente — ou, quando uma pesquisa retornar mais vagas do que você quer analisar, execute `/rank` para pontuá-las em lote contra o framework de adequação e obter uma lista curta ranqueada primeiro.
 
-### 5. Apply to a job
+### 5. Candidate-se a uma vaga
 
 ```bash
 /apply https://jobindex.dk/job/1234567
 ```
 
-If the URL can't be fetched (some job portals block automated access), you can paste the job description directly instead:
+Se a URL não puder ser buscada (alguns portais bloqueiam acesso automatizado), você pode colar a descrição da vaga diretamente:
 
 ```bash
-/apply <paste the full job description here>
+/apply <cole aqui a descrição completa da vaga>
 ```
 
-This runs the full workflow: evaluate fit, draft CV + cover letter, review with a second agent, revise, and present the final output.
+Isso executa o fluxo completo: avalia a adequação, redige o CV e a carta de apresentação, revisa com um segundo agente, revisa novamente e apresenta o resultado final.
 
-## Other commands
+## Outros comandos
 
-`/setup`, `/scrape`, and `/apply` form the core workflow. Seven more commands extend it once your profile is in place:
+`/setup`, `/scrape` e `/apply` formam o fluxo central. Sete comandos adicionais estendem-no depois que seu perfil estiver pronto:
 
-- **`/interview`** preps you for a scheduled interview on a tracked application. It builds a stage-specific prep pack from the application's archive (the exact posting, the CV and cover letter the interviewer actually read, feedback recorded from earlier rounds), researches the company and interviewers with a verify-before-use rule, maps likely questions to your STAR examples, and offers a mock interview following the roleplay protocol in `07-interview-prep.md`. Gaps get honest bridge answers, never invented experience.
-- **`/outcome`** records what happened to an application - interview stages, offers, rejections, silence. It archives the submitted CV, cover letter, and posting text into `documents/applications/<company>_<role>/`, keeps `outcome.md` in the format `/setup` Path A parses, and updates the tracker. Once a few applications resolve, it points you back to `/setup` to calibrate the fit framework from what actually got interviews.
-- **`/rank`** bridges `/scrape` and `/apply`: it batch-scores all newly scraped postings against the fit framework (parallel agents fetch each posting and score the five evaluation dimensions) and returns a ranked shortlist with honest per-job strengths and gaps. Deal-breakers veto, deadlines get urgency flags, dead postings get marked expired. Pick a number and it hands off to the full `/apply` workflow.
-- **`/expand`** enriches your profile by scanning public sources you've already linked in it (GitHub repos, portfolio site, Kaggle, Google Scholar) and looking up syllabi for named courses and certifications. Discovered competencies are added to your profile with a source tag. Useful right after `/setup` to surface skills that documents alone don't make explicit.
-- **`/upskill`** analyzes the gap between your profile and your tracked job postings (or a single posting via `/upskill <URL>`). Produces a prioritized heatmap of skill gaps and a learning plan with web-searched study resources and time estimates. Useful for career planning between applications.
-- **`/add-template`** registers your own LaTeX CV or cover letter template in place of the stock ones. It captures the template's instructions (compile engine, fonts, style rules, page limit), runs a mandatory test compile, and wires the template into `/apply`. See [LaTeX templates](#latex-templates) below.
-- **`/add-portal`** generates a job-portal search skill for a job board in your market. It investigates the portal (search URL pattern, result structure, access rules), scaffolds the CLI skill from the same structure as the shipped ones, and test-runs a live query before registering. See [Job search tools](#job-search-tools) below.
+- **`/interview`** prepara você para uma entrevista agendada em uma candidatura rastreada. Ele monta um pacote de preparação específico para o estágio a partir do arquivo da aplicação (o anúncio exato, o CV e a carta de apresentação que o entrevistador realmente leu, feedback registrado de rodadas anteriores), pesquisa a empresa e os entrevistadores com uma regra de verificação antes do uso, mapeia perguntas prováveis aos seus exemplos STAR e oferece uma simulação de entrevista seguindo o protocolo de roleplay em `07-interview-prep.md`. Lacunas recebem respostas de ponte honestas, nunca experiência inventada.
+- **`/outcome`** registra o que aconteceu em uma candidatura — estágios de entrevista, ofertas, rejeições, silêncio. Arquiva o CV enviado, a carta de apresentação e o texto do anúncio em `documents/applications/<company>_<role>/`, mantém `outcome.md` no formato que o Caminho A do `/setup` analisa e atualiza o rastreador. Depois que algumas candidaturas forem resolvidas, aponta você de volta ao `/setup` para calibrar o framework de adequação com base no que realmente gerou entrevistas.
+- **`/rank`** faz a ponte entre `/scrape` e `/apply`: pontua em lote todas as vagas recém-raspadas contra o framework de adequação (agentes paralelos buscam cada anúncio e pontuam as cinco dimensões de avaliação) e retorna uma lista ranqueada com pontos fortes e lacunas honestas por vaga. Fatores eliminatórios vetam, prazos recebem bandeiras de urgência, anúncios vencidos são marcados como expirados. Escolha um número e ele entrega ao fluxo completo de `/apply`.
+- **`/expand`** enriquece seu perfil escaneando fontes públicas que você já vinculou nele (repositórios GitHub, site de portfólio, Kaggle, Google Scholar) e pesquisando ementas para cursos e certificações mencionados. Competências descobertas são adicionadas ao seu perfil com uma tag de fonte. Útil logo após `/setup` para expor habilidades que apenas documentos não tornam explícitas.
+- **`/upskill`** analisa a lacuna entre seu perfil e suas vagas rastreadas (ou um único anúncio via `/upskill <URL>`). Produz um mapa de calor priorizado de lacunas de habilidade e um plano de aprendizagem com recursos pesquisados na web e estimativas de tempo. Útil para planejamento de carreira entre candidaturas.
+- **`/add-template`** registra seu próprio modelo LaTeX de CV ou carta de apresentação em vez dos modelos padrão. Ele captura as instruções do modelo (motor de compilação, fontes, regras de estilo, limite de páginas), executa uma compilação de teste obrigatória e conecta o modelo a `/apply`. Veja [LaTeX templates](#latex-templates) abaixo.
+- **`/add-portal`** gera uma habilidade de busca de portal de emprego para um quadro de vagas no seu mercado. Ele investiga o portal (padrão de URL de busca, estrutura da página de resultados, robots.txt/regras de acesso), gera uma habilidade CLI com a mesma estrutura, comandos e contrato de saída dos modelos enviados e testa uma consulta ao vivo antes de registrar qualquer coisa. Portais com autenticação são recusados, e portais com termos restritivos recebem um aviso proeminente de uso somente pessoal no skill gerado. O skill gerado é específico para o mercado e vive no seu fork; o gerador em si é a parte universal.
 
-`/reset` is also available, see [Starting over](#starting-over) below.
+`/reset` também está disponível, veja [Starting over](#starting-over) abaixo.
 
-## File structure
+## Estrutura de arquivos
 
 ```
 ai-job-search/
-├── CLAUDE.md                          # Main candidate profile + workflow rules
+├── CLAUDE.md                          # Perfil principal do candidato + regras do fluxo de trabalho
 ├── .claude/
 │   ├── commands/
-│   │   ├── apply.md                   # /apply workflow (drafter-reviewer)
-│   │   ├── setup.md                   # /setup onboarding (documents folder, CV import, or interview)
-│   │   ├── expand.md                  # /expand competency enrichment from documents and online presence
-│   │   ├── add-template.md            # /add-template register custom LaTeX templates
-│   │   ├── add-portal.md              # /add-portal generate a job-portal search skill for your market
-│   │   ├── rank.md                    # /rank triage scraped jobs into a ranked shortlist
-│   │   ├── outcome.md                 # /outcome record application results, archive materials
-│   │   ├── interview.md               # /interview stage-specific prep pack + mock interview
-│   │   └── reset.md                   # /reset wipe profile data or documents folder
+│   │   ├── apply.md                   # fluxo /apply (redator-revisor)
+│   │   ├── setup.md                   # onboarding /setup (pasta de documentos, importação de CV ou entrevista)
+│   │   ├── expand.md                  # enriquecimento /expand de competências a partir de documentos e presença online
+│   │   ├── add-template.md            # /add-template registra modelos LaTeX personalizados
+│   │   ├── add-portal.md              # /add-portal gera uma habilidade de busca de portal de emprego para seu mercado
+│   │   ├── rank.md                    # /rank triage vagas raspadas em uma lista ranqueada
+│   │   ├── outcome.md                 # /outcome registra resultados de candidatura e arquiva materiais
+│   │   ├── interview.md               # /interview pacote de preparação por estágio + simulação de entrevista
+│   │   └── reset.md                   # /reset apaga dados de perfil ou pasta de documentos
 │   ├── skills/
-│   │   ├── job-application-assistant/  # Core application skill
-│   │   │   ├── SKILL.md               # Skill definition
-│   │   │   ├── 01-candidate-profile.md # Your education, experience, skills
-│   │   │   ├── 02-behavioral-profile.md# PI/DISC/personality assessment
-│   │   │   ├── 03-writing-style.md    # Tone, structure, do's and don'ts
-│   │   │   ├── 04-job-evaluation.md   # Scoring framework for job fit
-│   │   │   ├── 05-cv-templates.md     # LaTeX CV structure + tailoring rules
-│   │   │   ├── 06-cover-letter-templates.md # LaTeX cover letter templates
-│   │   │   └── 07-interview-prep.md   # STAR examples + interview framework
-│   │   ├── job-scraper/               # Job search orchestration
-│   │   └── upskill/                   # /upskill skill gap analysis and learning plan
-│   └── settings.json                  # Claude Code permissions (shared, scoped)
-├── .agents/skills/                    # Job portal CLI tools
-│   ├── gupy-search/                   # Gupy ATS portal (Brazil, JSON API)
-│   ├── vagas-search/                  # Vagas.com.br (Brazil)
-│   ├── linkedin-search/               # LinkedIn public job listings (country-agnostic)
-│   └── freehire-search/               # freehire.dev tech job aggregator (multi-market, REST API)
-├── .agents/skills-disabled/           # Parked portal CLIs (upstream Danish portals), ignored by /scrape
+│   │   ├── job-application-assistant/  # habilidade principal de candidatura
+│   │   │   ├── SKILL.md               # definição de habilidade
+│   │   │   ├── 01-candidate-profile.md # sua educação, experiência, habilidades
+│   │   │   ├── 02-behavioral-profile.md# avaliação comportamental PI/DISC/personalidade
+│   │   │   ├── 03-writing-style.md    # tom, estrutura, o que fazer e o que não fazer
+│   │   │   ├── 04-job-evaluation.md   # framework de pontuação para adequação de vaga
+│   │   │   ├── 05-cv-templates.md     # estrutura de CV em LaTeX + regras de adaptação
+│   │   │   ├── 06-cover-letter-templates.md # modelos de carta de apresentação em LaTeX
+│   │   │   └── 07-interview-prep.md   # exemplos STAR + framework de entrevista
+│   │   ├── job-scraper/               # orquestração de busca de vagas
+│   │   └── upskill/                   # análise de lacunas /upskill e plano de aprendizagem
+│   └── settings.json                  # permissões do Claude Code (compartilhadas, scope)
+├── .agents/skills/                    # ferramentas CLI de portais de emprego
+│   ├── gupy-search/                   # portal ATS Gupy (Brasil, API JSON)
+│   ├── vagas-search/                   # Vagas.com.br (Brasil)
+│   ├── linkedin-search/               # anúncios públicos do LinkedIn (sem país específico)
+│   └── freehire-search/               # agregador técnico freehire.dev (multi-mercado, REST API)
+├── .agents/skills-disabled/           # CLIs de portais arquivados (portais dinamarqueses upstream), ignorados pelo /scrape
 ├── cv/
-│   └── main_example.tex               # moderncv LaTeX template
+│   └── main_example.tex               # modelo LaTeX moderncv
 ├── cover_letters/
-│   ├── cover.cls                      # Custom cover letter LaTeX class
-│   ├── cover_example.tex              # Example cover letter (structural reference + CI smoke test)
-│   └── OpenFonts/                     # Lato + Raleway fonts
-├── templates/                         # Custom templates registered via /add-template
-│   └── README.md                      # Folder layout instructions
-├── documents/                         # Career source materials for /setup Path A and /expand
-│   ├── README.md                      # Folder layout instructions
-│   ├── cv/                            # Master CV (PDF or .tex)
-│   ├── linkedin/                      # LinkedIn profile export (PDF)
-│   ├── diplomas/                      # Degree certificates and transcripts
-│   ├── references/                    # Reference letters
-│   └── applications/                  # Past application records (<company>_<role>/)
-├── .github/workflows/ci.yml           # CI: LaTeX smoke compiles, skill lint, CLI typechecks
-├── salary_lookup.py                   # Salary benchmarking tool (BYO data)
+│   ├── cover.cls                      # classe LaTeX personalizada para cartas de apresentação
+│   ├── cover_example.tex              # carta de apresentação de exemplo (referência estrutural + teste de smoke de CI)
+│   └── OpenFonts/                     # fontes Lato + Raleway
+├── templates/                         # modelos personalizados registrados via /add-template
+│   └── README.md                      # instruções de layout da pasta
+├── documents/                         # materiais de carreira para /setup Path A e /expand
+│   ├── README.md                      # instruções de layout da pasta
+│   ├── cv/                            # CV mestre (PDF ou .tex)
+│   ├── linkedin/                      # exportação de perfil do LinkedIn (PDF)
+│   ├── diplomas/                      # certificados e históricos
+│   ├── references/                    # cartas de referência
+│   └── applications/                  # candidaturas anteriores (<company>_<role>/)
+├── .github/workflows/ci.yml           # CI: compilações smoke LaTeX, lint de habilidades, verificação de tipos da CLI
+├── salary_lookup.py                   # ferramenta de benchmark salarial (BYO data)
 ├── tools/
-│   ├── convert_salary_excel.py        # Convert salary Excel to JSON
-│   ├── lint_skills.py                 # CI lint for skills, commands, settings.json
-│   ├── security_guards.py             # CI guards: permission allowlist, gitignore rules, manifests
-│   └── README_SALARY_TOOL.md          # Salary tool setup instructions
-├── job_scraper/                       # Scraper state (seen jobs, results)
-├── upskill/                           # /upskill report output (markdown reports per run)
-├── job_search_tracker.csv             # Application tracking spreadsheet
-└── SETUP.md                           # Detailed setup guide
+│   ├── convert_salary_excel.py        # converte Excel salarial para JSON
+│   ├── lint_skills.py                 # lint de CI para skills, commands, settings.json
+│   ├── security_guards.py             # guardas de CI: allowlist de permissões, regras de gitignore, manifests
+│   └── README_SALARY_TOOL.md          # instruções de configuração da ferramenta salarial
+├── job_scraper/                       # estado do scraper (vagas vistas, resultados)
+├── upskill/                           # saída de relatórios /upskill (markdown por execução)
+├── job_search_tracker.csv             # planilha de rastreamento de candidaturas
+└── SETUP.md                           # guia detalhado de configuração
 ```
 
-## How `/apply` works
+## Como `/apply` funciona
 
-The `/apply` command runs a **drafter-reviewer workflow** with mandatory PDF compilation:
+O comando `/apply` executa um **fluxo redator-revisor** com compilação PDF obrigatória:
 
-1. **Parse** the job posting (URL or text)
-2. **Evaluate fit** against your profile (skills, experience, culture, location, career alignment)
-3. **Draft** a tailored CV and cover letter in LaTeX
-4. **Spawn a reviewer agent** that researches the company and critiques the drafts
-5. **Revise** based on the reviewer's feedback
-6. **Compile and inspect** both PDFs: lualatex for the CV, xelatex for the cover letter. Claude reads the rendered pages and iterates on the LaTeX until the CV is exactly 2 pages with no orphaned entry titles, and the cover letter is exactly 1 page with the signature visible and fonts consistent.
-7. **ATS-check the CV**: extract the PDF's text layer (`pdftotext`, optional dependency) and verify it the way an ATS parser sees it — contact details present as literal text, no garbled glyphs, sane reading order — then score the posting's keyword coverage against the extraction. Keywords the profile genuinely supports get added; genuine gaps stay visible, never stuffed.
-8. **Present** the final output with a verification checklist
+1. **Analisa** o anúncio de vaga (URL ou texto)
+2. **Avalia a adequação** em relação ao seu perfil (habilidades, experiência, cultura, localização, alinhamento de carreira)
+3. **Redige** um CV e uma carta de apresentação personalizados em LaTeX
+4. **Gera um agente revisor** que pesquisa a empresa e critica os rascunhos
+5. **Revisa** com base no feedback do revisor
+6. **Compila e inspeciona** ambos os PDFs: lualatex para o CV, xelatex para a carta. Claude lê as páginas renderizadas e itera sobre o LaTeX até que o CV tenha exatamente 2 páginas sem títulos de entrada órfãos, e a carta de apresentação caiba exatamente em 1 página com assinatura visível e fontes consistentes.
+7. **Verifica o CV no ATS**: extrai a camada de texto do PDF (`pdftotext`, dependência opcional) e valida da forma como um parser ATS vê — detalhes de contato como texto literal, sem glifos corrompidos, ordem de leitura sensata — então pontua a cobertura de palavras-chave do anúncio contra a extração. Palavras-chave que o perfil realmente suporta são adicionadas; lacunas reais permanecem visíveis, sem enchimento.
+8. **Apresenta** o resultado final com uma lista de verificação de verificação
 
-All claims in the CV and cover letter are verified against your actual profile. The system never fabricates skills or experience.
+Todas as afirmações no CV e na carta de apresentação são verificadas em relação ao seu perfil real. O sistema nunca fabrica habilidades ou experiência.
 
-### What makes this workflow different
+### O que torna esse fluxo diferente
 
-- **PDF verification loop.** Most LaTeX-resume templates produce "looks fine in the .tex" output that breaks in the PDF: job titles orphan to the next page, cover letters spill onto page 2, bullet fonts silently fall back to the body font. The `/apply` command compiles and visually inspects every PDF and applies targeted fixes (`\needspace`, `\enlargethispage`, font-matching wrappers for list items) until the layout is clean. This runs automatically on every application.
-- **ATS verification on the PDF text layer.** An ATS reads the PDF's embedded text, not the rendered page — and LaTeX can silently produce PDFs whose text extracts as garbage (icon glyphs where the email should be, interleaved lines from multi-column layouts). `/apply` extracts the compiled CV's text layer with `pdftotext` and verifies contact details, reading order, and the posting's keyword coverage against what a parser actually sees. Honesty rule enforced: a keyword the profile doesn't support is acknowledged as a gap, never stuffed in.
-- **Relevance-weighted CV cutting.** When a CV overflows 2 pages, the workflow does not cut mechanically from the "oldest" section. It scores each candidate line by (a) relevance to the target posting, (b) uniqueness in the document, and (c) whether the cover letter depends on it, and cuts the lowest-total-score line first. An older-role bullet that hits posting keywords survives ahead of a recent-role bullet that does not.
-- **Drafter-reviewer separation.** The drafter writes; a second Claude agent, spawned with a fresh context, researches the company and critiques the drafts. The drafter then revises. This catches missed keywords, weak framing, and generic language that a single pass often leaves in.
-- **Token-efficient reviewer dispatch.** The reviewer agent receives drafts inline rather than re-reading them, and the verification checklist runs once at the end of the workflow rather than being duplicated by both agents. Note: the new compile-and-inspect step in Step 5 spends some of those savings on PDF rendering and layout iteration — the workflow trades some end-to-end token cost for a real reduction in broken PDFs reaching the user.
+- **Loop de verificação de PDF.** A maioria dos modelos LaTeX de currículo produz um resultado que "parece bom no .tex" mas quebra no PDF: títulos de cargo órfãos na página seguinte, cartas de apresentação que passam para a página 2, fontes de marcador que silenciosamente mudam para a fonte do corpo. O comando `/apply` compila e inspeciona visualmente cada PDF e aplica correções direcionadas (`\needspace`, `\enlargethispage`, wrappers de correspondência de fonte para itens de lista) até que o layout esteja limpo. Isso roda automaticamente em cada candidatura.
+- **Verificação ATS na camada de texto do PDF.** Um ATS lê o texto incorporado do PDF, não a página renderizada — e o LaTeX pode produzir PDFs cujo texto é extraído como lixo (glifos de ícone onde o e-mail deveria estar, linhas intercaladas em layouts de várias colunas). `/apply` extrai a camada de texto do CV compilado com `pdftotext` e verifica detalhes de contato, ordem de leitura e cobertura de palavras-chave do anúncio contra o que um parser realmente vê. A regra de honestidade é aplicada: uma palavra-chave que o perfil não suporta é reconhecida como lacuna, nunca é inserida artificialmente.
+- **Corte de CV ponderado por relevância.** Quando um CV ultrapassa 2 páginas, o fluxo não corta mecanicamente da seção "mais antiga". Ele pontua cada linha candidata por (a) relevância ao anúncio alvo, (b) exclusividade no documento e (c) se a carta de apresentação depende dela, e corta a linha com menor pontuação total primeiro. Um bullet de um cargo mais antigo que atenda palavras-chave do anúncio sobrevive à frente de um bullet de cargo recente que não o faça.
+- **Separação redator-revisor.** O redator escreve; um segundo agente Claude, gerado com um contexto fresco, pesquisa a empresa e critica os rascunhos. O redator então revisa. Isso captura palavras-chave perdidas, enquadramento fraco e linguagem genérica que uma única passagem costuma deixar passar.
+- **Despacho de revisor eficiente em tokens.** O agente revisor recebe os rascunhos inline em vez de relê-los, e a lista de verificação é executada uma vez ao final do fluxo em vez de ser duplicada por ambos os agentes. Nota: a nova etapa de compilação e inspeção no Passo 5 usa parte dessas economias em renderização de PDF e iteração de layout — o fluxo troca algum custo total de token por uma redução real de PDFs quebrados chegando ao usuário.
 
-## Customization
+## Personalização
 
-### Which files to edit manually
+### Quais arquivos editar manualmente
 
-If you prefer editing files directly instead of using `/setup`:
+Se você prefere editar arquivos diretamente em vez de usar `/setup`:
 
-| File | What to change |
+| Arquivo | O que alterar |
 |------|---------------|
-| `CLAUDE.md` | Your full profile (name, education, experience, skills, goals) |
-| `01-candidate-profile.md` | Structured version of your CV data |
-| `02-behavioral-profile.md` | Your behavioral assessment or self-assessment |
-| `04-job-evaluation.md` | Skill match areas, career goals, motivation filters |
-| `05-cv-templates.md` | Profile statement templates for different role types |
-| `07-interview-prep.md` | Your STAR examples from actual experience |
-| `search-queries.md` | Job search queries for your skills and location |
+| `CLAUDE.md` | Seu perfil completo (nome, educação, experiência, habilidades, objetivos) |
+| `01-candidate-profile.md` | Versão estruturada dos dados do seu CV |
+| `02-behavioral-profile.md` | Sua avaliação comportamental ou autoavaliação |
+| `04-job-evaluation.md` | Áreas de correspondência de habilidades, metas de carreira, filtros de motivação |
+| `05-cv-templates.md` | Modelos de declaração de perfil para diferentes tipos de função |
+| `07-interview-prep.md` | Seus exemplos STAR de experiência real |
+| `search-queries.md` | Consultas de busca de vaga para suas habilidades e localizações |
 
-### Updating your search queries
+### Atualizando suas consultas de busca
 
-As your priorities evolve, you can reconfigure just the job search without re-running the full profile setup:
+Conforme suas prioridades evoluem, você pode reconfigurar apenas a busca de vagas sem reexecutar o setup completo:
 
 ```
 /setup --section search
 ```
 
-This re-runs the search configuration interview: which roles to target, which skills to search for, which locations, and which portals. It also suggests role types you may not have considered based on your profile.
+Isso reinicia a entrevista de configuração de busca: quais cargos mirar, quais habilidades buscar, quais locais e quais portais. Também sugere tipos de função que você pode não ter considerado com base no seu perfil.
 
-### LaTeX templates
+### Modelos LaTeX
 
-The CV uses [moderncv](https://ctan.org/pkg/moderncv) (banking style). The cover letter uses a custom `cover.cls` with Lato/Raleway fonts.
+O CV usa [moderncv](https://ctan.org/pkg/moderncv) (estilo banking). A carta de apresentação usa um `cover.cls` personalizado com fontes Lato/Raleway.
 
-To use your own template instead, run:
+Para usar seu próprio modelo, execute:
 
 ```
 /add-template
 ```
 
-Point it at your `.tex` file (plus any `.cls`/`.sty` files or bundled fonts). The command interviews you for the template's instructions — compile engine, fonts and where they live, style rules to preserve, hard page limit — stores everything under `templates/`, runs a mandatory test compile, and activates the template so `/apply` drafts from it. Templates are stored with `[PLACEHOLDER]` tokens instead of personal data, so they're safe to commit and share.
+Aponte para seu arquivo `.tex` (mais quaisquer arquivos `.cls`/`.sty` ou fontes incluídas). O comando pergunta as instruções do modelo — motor de compilação, fontes e onde elas vivem, regras de estilo a preservar, limite de páginas rígido — armazena tudo em `templates/`, executa uma compilação de teste obrigatória e ativa o modelo para que `/apply` redija a partir dele. Os modelos são armazenados com tokens `[PLACEHOLDER]` em vez de dados pessoais, então são seguros para commitar e compartilhar.
 
-- `/add-template --list` shows registered templates
-- `/add-template --use <name>` switches between them
-- `/add-template --use default` reverts to the stock moderncv / cover.cls templates
+- `/add-template --list` mostra os modelos registrados
+- `/add-template --use <name>` alterna entre eles
+- `/add-template --use default` reverte para os modelos padrão moderncv / cover.cls
 
-If you prefer doing it by hand, the manual route still works: update the guidance in `05-cv-templates.md` and `06-cover-letter-templates.md`.
+Se preferir fazer manualmente, a rota manual ainda funciona: atualize as orientações em `05-cv-templates.md` e `06-cover-letter-templates.md`.
 
-### Job search tools
+### Ferramentas de busca de vagas
 
-The four Danish CLI tools in `.agents/skills/` (Jobbank, Jobdanmark, Jobindex, Jobnet) demonstrate the pattern for building a job-portal integration for a specific market. If you're in a different country, run:
+As quatro ferramentas CLI dinamarquesas em `.agents/skills/` (Jobbank, Jobdanmark, Jobindex, Jobnet) demonstram o padrão para construir uma integração de portal de emprego para um mercado específico. Se você estiver em outro país, execute:
 
 ```
 /add-portal
 ```
 
-Give it your local job board's URL. The command investigates the portal (search-URL pattern, result-page structure, robots.txt/access rules), scaffolds a CLI skill with the same structure, commands, and output contract as the shipped ones, and test-runs a live query before registering anything. Auth-walled portals are declined, and portals with restrictive terms get a prominent personal-use-only warning in the generated skill. The generated skill is market-specific and lives in your fork; the generator itself is the universal part.
+Forneça a URL do seu quadro de vagas local. O comando investiga o portal (padrão de URL de busca, estrutura da página de resultados, robots.txt/regras de acesso), gera uma habilidade CLI com a mesma estrutura, comandos e contrato de saída dos modelos enviados e testa uma consulta ao vivo antes de registrar qualquer coisa. Portais com autenticação são recusados, e portais com termos restritivos recebem um aviso proeminente de uso somente pessoal no skill gerado. O skill gerado é específico para o mercado e vive no seu fork; o gerador em si é a parte universal.
 
-Maintaining a fork adapted to your market or language? Add it to the [Community forks & adaptations](https://github.com/MadsLorentzen/ai-job-search/discussions/78) thread so others can find it.
+Mantendo um fork adaptado ao seu mercado ou idioma? Adicione-o ao tópico [Community forks & adaptations](https://github.com/<owner>/ai-job-search/discussions/78) para que outros possam encontrá-lo.
 
-For **country-agnostic** starting points outside Denmark, the repo ships two portal skills alongside the Danish demos:
+Para pontos de partida **independentes de país** fora da Dinamarca, o repositório envia duas habilidades de portal juntamente com as demos dinamarquesas:
 
-- **`linkedin-search`** — built on LinkedIn's public, unauthenticated `jobs-guest` endpoints. Field-agnostic, **zero runtime dependencies** (runs with just `bun`), and takes the search location as an explicit flag, so it works for any market out of the box (`-l "Berlin, Germany"`, `-l "Mumbai, Maharashtra, India"`, `-l "Remote"`, …). Intended for **personal use only** — automated access is against LinkedIn's Terms of Service, so keep volume low. See `.agents/skills/linkedin-search/SKILL.md`.
-- **`freehire-search`** — queries the [freehire.dev](https://freehire.dev) aggregator's public REST API (JSON, no API key). Tech-focused (software, data, engineering, DevOps, remote), multi-market via facet flags (`--region`, `--country`, `--remote`), and **zero runtime dependencies**. Unlike the HTML-scraping Danish portals, results come back structured (skills, seniority, category). The backend is MIT-licensed and [self-hostable](https://github.com/strelov1/freehire) — point `FREEHIRE_API_URL` at your own instance if you prefer. See `.agents/skills/freehire-search/SKILL.md`.
+- **`linkedin-search`** — construído nos endpoints públicos e não autenticados `jobs-guest` do LinkedIn. Agnóstico de campo, **zero dependências de runtime** (executa apenas com `bun`) e recebe a localização de busca como uma flag explícita, por isso funciona em qualquer mercado imediatamente (`-l "Berlin, Germany"`, `-l "Mumbai, Maharashtra, India"`, `-l "Remote"`, …). Destinado a **uso pessoal apenas** — acesso automatizado é contra os Termos de Serviço do LinkedIn, então mantenha o volume baixo. Veja `.agents/skills/linkedin-search/SKILL.md`.
+- **`freehire-search`** — consulta a API REST pública do agregador [freehire.dev](https://freehire.dev) (JSON, sem chave de API). Focado em tecnologia (software, dados, engenharia, DevOps, remoto), multi-mercado via flags de faceta (`--region`, `--country`, `--remote`) e **zero dependências de runtime**. Diferente dos portais dinamarqueses que raspam HTML, os resultados voltam estruturados (habilidades, senioridade, categoria). O backend é licenciado MIT e [auto-hospedável](https://github.com/strelov1/freehire) — aponte `FREEHIRE_API_URL` para sua própria instância se preferir. Veja `.agents/skills/freehire-search/SKILL.md`.
 
-### Salary benchmarking
+### Benchmark salarial
 
-The salary tool works with any salary data you provide (union statistics, Glassdoor exports, personal research, etc.). See `tools/README_SALARY_TOOL.md` for the expected format and setup. If you don't have salary data, the salary step is simply skipped.
+A ferramenta salarial funciona com quaisquer dados salariais que você fornecer (estatísticas sindicais, exports do Glassdoor, pesquisa pessoal etc.). Veja `tools/README_SALARY_TOOL.md` para o formato e a configuração esperados. Se você não tiver dados salariais, a etapa salarial é simplesmente ignorada.
 
-### Starting over
+### Começando de novo
 
-To wipe your profile data and start fresh:
+Para apagar seus dados de perfil e começar do zero:
 
 ```
-/reset profile    # clears skill files, preserves framework rules
-/reset documents  # deletes files from documents/ folder
-/reset all        # both
+/reset profile    # limpa arquivos de habilidade, preserva as regras do framework
+/reset documents  # apaga arquivos da pasta documents/
+/reset all        # ambos
 ```
 
-`/reset` shows exactly what will be deleted and requires you to type `RESET` to confirm. Nothing is deleted until you do.
+`/reset` mostra exatamente o que será apagado e exige que você digite `RESET` para confirmar. Nada é excluído até que você faça isso.
 
-## Tips for better results
+## Dicas para melhores resultados
 
-### Profile depth matters
+### A profundidade do perfil importa
 
-The single biggest factor in output quality is how much detail you put into your profile. A thin profile produces generic applications; a detailed one enables genuinely tailored results.
+O fator mais importante na qualidade do resultado é a quantidade de detalhe que você coloca no seu perfil. Um perfil raso produz candidaturas genéricas; um perfil detalhado permite resultados genuinamente personalizados.
 
-- **Role descriptions:** Don't just list job titles. Describe what you actually did in each position: specific projects, tools used, responsibilities, and measurable achievements. The more material you provide, the more precisely the system can reframe your experience for different roles.
-- **Skills in context:** Instead of listing "Python" or "project management," describe how and where you applied them. "Built ML pipelines for customer churn prediction in Python using scikit-learn" gives the system far more to work with than "Python, machine learning."
-- **All onboarding paths work:** Whether you point `/setup` at your `documents/` folder, paste a single CV, or walk through the interview, the principle is the same: richer input produces sharper output.
+- **Descrições de cargo:** Não apenas liste títulos de trabalhos. Descreva o que você realmente fez em cada posição: projetos específicos, ferramentas usadas, responsabilidades e realizações mensuráveis. Quanto mais material você fornecer, mais precisamente o sistema poderá reenquadrar sua experiência para diferentes funções.
+- **Habilidades em contexto:** Em vez de listar "Python" ou "gerenciamento de projetos", descreva como e onde você as aplicou. "Construiu pipelines de ML para previsão de churn de clientes em Python usando scikit-learn" dá ao sistema muito mais para trabalhar do que "Python, machine learning".
+- **Todos os caminhos de onboarding funcionam:** Quer você aponte `/setup` para sua pasta `documents/`, cole um único CV ou passe pela entrevista, o princípio é o mesmo: entrada mais rica produz saída mais afiada.
 
-### Career path discovery
+### Descoberta de caminho de carreira
 
-The framework supports two distinct modes of job searching:
+O framework suporta dois modos distintos de busca de vagas:
 
-- **Explicit targeting:** You know which roles or sectors you want. The system helps refine and prioritize based on fit.
-- **Latent opportunity discovery:** By analyzing your full history (not just job titles, but the actual work you did), the system can surface career paths you haven't considered. Transferable skills that map to unexpected industries, patterns in what you enjoyed or excelled at, or emerging roles that combine your domain expertise with new technology.
+- **Alvo explícito:** você sabe quais cargos ou setores quer. O sistema ajuda a refinar e priorizar com base na adequação.
+- **Descoberta de oportunidades latentes:** ao analisar seu histórico completo (não apenas títulos de trabalho, mas o trabalho real que você fez), o sistema pode revelar caminhos de carreira que você não considerou. Habilidades transferíveis que se mapeiam para indústrias inesperadas, padrões no que você gostou ou se destacou, ou funções emergentes que combinam sua expertise com nova tecnologia.
 
-To get the most from this, invest time during `/setup` in describing not just your experience, but what energized you, what drained you, and what you'd want more of. This context directly shapes how the system evaluates fit and which roles it surfaces during `/scrape`.
+Para aproveitar ao máximo isso, invista tempo durante o `/setup` em descrever não apenas sua experiência, mas o que o energizou, o que o esgotou e o que você gostaria de ter mais. Esse contexto molda diretamente como o sistema avalia a adequação e quais vagas ele apresenta durante o `/scrape`.
 
-## Contributing
+## Contribuição
 
-Thinking about a PR? Read [CONTRIBUTING.md](CONTRIBUTING.md) first - it explains what gets merged, what lives in forks, and why.
+Pensando em abrir um PR? Leia [CONTRIBUTING.md](CONTRIBUTING.md) primeiro — ele explica o que é mesclado, o que vive em forks e por quê.
 
-## Acknowledgements
+## Agradecimentos
 
-- [Mikkel Krogholm](https://github.com/mikkelkrogsholm) ([skills repo](https://github.com/mikkelkrogsholm/skills)) for the job search CLI skills
-- Built with [Claude Code](https://claude.com/claude-code) by [Anthropic](https://anthropic.com)
+- Construído com [Claude Code](https://claude.com/claude-code) pela [Anthropic](https://anthropic.com)
 
-## License
+## Licença
 
 MIT

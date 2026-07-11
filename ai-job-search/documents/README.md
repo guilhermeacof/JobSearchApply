@@ -1,109 +1,109 @@
-# Documents Folder
+# Pasta de Documentos
 
-This folder holds your actual career documents. The `/setup` command reads everything here and uses it to populate the candidate skill files under `.claude/skills/job-application-assistant/`. It is safe to re-run `/setup` as you add new documents — it merges intelligently and will never overwrite existing content without asking you first.
+Esta pasta contém seus documentos de carreira reais. O comando `/setup` lê tudo aqui e usa para preencher os arquivos de habilidade do candidato em `.claude/skills/job-application-assistant/`. É seguro executar `/setup` novamente à medida que você adiciona mais documentos — ele faz a mesclagem de forma inteligente e nunca sobrescreve conteúdo existente sem perguntar primeiro.
 
 ---
 
-## Folder Structure
+## Estrutura da pasta
 
 ```
 documents/
-├── cv/                          # Your CV files (PDF or LaTeX)
-├── linkedin/                    # LinkedIn profile export (PDF)
-├── diplomas/                    # Degree certificates and transcripts
-├── references/                  # Reference letters
-├── applications/                # Past job applications
+├── cv/                          # Seus arquivos de CV (PDF ou LaTeX)
+├── linkedin/                    # Exportação do perfil do LinkedIn (PDF)
+├── diplomas/                    # Certificados de grau e históricos acadêmicos
+├── references/                  # Cartas de referência
+├── applications/                # Candidaturas anteriores
 │   └── <company>_<role>/
-│       ├── job_posting.md       # The original job posting (paste as text)
-│       ├── cover_letter.tex     # The cover letter you submitted
-│       ├── cv_draft.tex         # The CV variant you submitted
-│       └── outcome.md           # Result + notes (fill in after hearing back)
-└── README.md                    # This file
+│       ├── job_posting.md       # O anúncio original (cole como texto)
+│       ├── cover_letter.tex     # A carta de apresentação que você enviou
+│       ├── cv_draft.tex         # A variante de CV que você enviou
+│       └── outcome.md           # Resultado + notas (preencha após retorno)
+└── README.md                    # Este arquivo
 ```
 
 ---
 
 ## cv/
 
-Your master CV — the most complete, unedited version of your professional record.
+Seu CV principal — a versão mais completa e não editada do seu histórico profissional.
 
-**Supported formats:** `.pdf`, `.tex`
+**Formatos suportados:** `.pdf`, `.tex`
 
-**What `/setup` extracts:**
-- Work experience (titles, companies, dates, bullet points)
-- Education (degrees, institutions, dates, thesis topics)
-- Technical skills
-- Awards and publications
-- Contact information
+**O que `/setup` extrai:**
+- Experiência profissional (títulos, empresas, datas, bullets)
+- Educação (graus, instituições, datas, temas de tese)
+- Habilidades técnicas
+- Prêmios e publicações
+- Informações de contato
 
-**Naming:** Any filename works. If multiple files are present, `/setup` reads all of them and cross-references for consistency.
+**Nomeação:** Qualquer nome de arquivo funciona. Se houver vários arquivos, `/setup` lê todos e faz referência cruzada para consistência.
 
-**Tip:** Keep your most comprehensive CV here (not a tailored variant). The skill files are the canonical source — tailored CVs are generated per application by `/apply`.
+**Dica:** Mantenha seu CV mais completo aqui (não uma variante personalizada). Os arquivos de habilidade são a fonte canônica — CVs personalizados são gerados por aplicação pelo `/apply`.
 
 ---
 
 ## linkedin/
 
-Your LinkedIn profile exported as a PDF.
+Seu perfil do LinkedIn exportado como PDF.
 
-**How to export:** On LinkedIn, go to your profile → More → Save to PDF. This exports a structured summary of your profile.
+**Como exportar:** No LinkedIn, vá para seu perfil → Mais → Salvar como PDF. Isso exporta um resumo estruturado do seu perfil.
 
-**Supported formats:** `.pdf`
+**Formatos suportados:** `.pdf`
 
-**What `/setup` extracts:**
-- Work experience and dates (cross-referenced against your CV)
-- Skills and endorsements
-- Education
-- Certifications and licenses
-- Volunteer work
-- Publications
-- About/summary section (used to infer behavioral profile additions)
-- Recommendations received (may enrich reference context)
+**O que `/setup` extrai:**
+- Experiência profissional e datas (referenciadas com seu CV)
+- Habilidades e recomendações
+- Educação
+- Certificações e licenças
+- Trabalho voluntário
+- Publicações
+- Seção Sobre/resumo (usada para inferir adições ao perfil comportamental)
+- Recomendações recebidas (podem enriquecer o contexto de referências)
 
-**Naming:** Any filename works. Only one LinkedIn export is expected; if multiple are present, `/setup` uses the most recently modified one.
+**Nomeação:** Qualquer nome de arquivo funciona. Apenas uma exportação do LinkedIn é esperada; se houver várias, `/setup` usa a mais recentemente modificada.
 
 ---
 
 ## diplomas/
 
-Degree certificates, transcripts, and any official qualifications.
+Certificados de grau, históricos acadêmicos e quaisquer qualificações oficiais.
 
-**Supported formats:** `.pdf`
+**Formatos suportados:** `.pdf`
 
-**What `/setup` extracts:**
-- Degree titles and official names (used to verify education entries)
-- Graduation dates
-- Grades or distinctions (if visible)
-- Institution names (official spelling)
+**O que `/setup` extrai:**
+- Títulos de grau e nomes oficiais (usados para verificar entradas de educação)
+- Datas de conclusão
+- Notas ou distinções (se visíveis)
+- Nomes das instituições (grafia oficial)
 
-**Naming:** Use descriptive names, e.g. `msc_physics_ucph_2025.pdf`, `bsc_physics_ucph_2016.pdf`. Naming does not affect parsing.
+**Nomeação:** Use nomes descritivos, por exemplo `msc_physics_ucph_2025.pdf`, `bsc_physics_ucph_2016.pdf`. O nome não afeta a análise.
 
 ---
 
 ## references/
 
-Reference letters from former managers, supervisors, or collaborators.
+Cartas de referência de ex-gerentes, supervisores ou colaboradores.
 
-**Supported formats:** `.pdf`, `.txt`, `.md`
+**Formatos suportados:** `.pdf`, `.txt`, `.md`
 
-**What `/setup` extracts:**
-- Referee name, title, and organization
-- Specific quotes and assessments (added to the references section of `01-candidate-profile.md`)
-- Competency language used by referees (adds behavioral signal to `02-behavioral-profile.md`)
+**O que `/setup` extrai:**
+- Nome, título e organização do referenciador
+- Citações e avaliações específicas (adicionadas à seção de referências de `01-candidate-profile.md`)
+- Linguagem de competência usada pelos referenciadores (adiciona sinal comportamental a `02-behavioral-profile.md`)
 
-**Naming:** Use the referee's name, e.g. `reference_ole_frandsen.pdf`.
+**Nomeação:** Use o nome do referenciador, por exemplo `reference_ole_frandsen.pdf`.
 
 ---
 
 ## applications/
 
-A record of past job applications. Each subfolder is one application.
+Um registro de candidaturas anteriores. Cada subpasta é uma candidatura.
 
-You can maintain these folders by hand, or let the **`/outcome`** command do it: it records progress updates and final results conversationally, archives the submitted drafts and the posting text, keeps `outcome.md` in the format below, and updates `job_search_tracker.csv` in the same step.
+Você pode manter estas pastas manualmente ou deixar o comando **`/outcome`** cuidar disso: ele registra atualizações de progresso e resultados finais de forma conversacional, arquiva os rascunhos enviados e o texto do anúncio, mantém `outcome.md` no formato abaixo e atualiza `job_search_tracker.csv` no mesmo passo.
 
-**Subfolder naming:** `<company>_<role>` — lowercase, underscores for spaces.
+**Nomeação da subpasta:** `<company>_<role>` — minúsculas, underscores para espaços.
 
-Examples:
+Exemplos:
 ```
 applications/
 ├── acme_ml_engineer/
@@ -111,15 +111,15 @@ applications/
 └── consultco_ai_consultant/
 ```
 
-### Files within each application folder
+### Arquivos dentro de cada pasta de candidatura
 
-**`job_posting.md`** — Paste the full job posting text here. Used by `/setup` to infer which skills and role types you have targeted, and to calibrate `04-job-evaluation.md`.
+**`job_posting.md`** — Cole aqui o texto completo do anúncio. Usado pelo `/setup` para inferir quais habilidades e tipos de função você tem direcionado e calibrar `04-job-evaluation.md`.
 
-**`cover_letter.tex`** — The cover letter you actually submitted. Used to extract writing style patterns and structure for `06-cover-letter-templates.md`.
+**`cover_letter.tex`** — A carta de apresentação que você realmente enviou. Usada para extrair padrões de estilo de escrita e estrutura para `06-cover-letter-templates.md`.
 
-**`cv_draft.tex`** — The CV variant you submitted. Used to extract profile statement styles for `05-cv-templates.md`.
+**`cv_draft.tex`** — A variante de CV que você enviou. Usada para extrair estilos de declaração de perfil para `05-cv-templates.md`.
 
-**`outcome.md`** — Fill this in after the application resolves. Format:
+**`outcome.md`** — Preencha depois que a candidatura for resolvida. Formato:
 
 ```markdown
 # Outcome: <Company> — <Role>
@@ -141,41 +141,41 @@ What would you do differently?
 Any signal about what they valued or didn't?
 ```
 
-`in_progress` marks an application that is still open (used by `/outcome` for interview-stage updates before a resolution). `/setup`'s calibration draws conclusions only from applications with a final status.
+`in_progress` marca uma candidatura que ainda está aberta (usado pelo `/outcome` para atualizações de estágio de entrevista antes da resolução). A calibração do `/setup` tira conclusões apenas de candidaturas com status final.
 
-Application folders may also contain **`interview_prep_<stage>.md`** files written by `/interview` (one per interview stage, kept as history). `/setup` reads only the four files named above and ignores these.
+As pastas de candidatura também podem conter arquivos **`interview_prep_<stage>.md`** escritos pelo `/interview` (um por estágio de entrevista, mantidos como histórico). O `/setup` lê apenas os quatro arquivos nomeados acima e ignora estes.
 
-**What `/setup` learns from outcome.md:**
-- Which role types and companies have led to interviews (signals strong fit areas)
-- Which applications did not progress (informs the experience match calibration in `04-job-evaluation.md`)
-- Interview feedback, if you recorded it, can surface new STAR candidates
-
----
-
-## File Format Notes
-
-| Format | Readable by `/setup` | Notes |
-|--------|--------------------------|-------|
-| `.pdf` | Yes | Parsed directly with the Read tool |
-| `.tex` | Yes | LaTeX source — structure and content both readable |
-| `.md` | Yes | Plain text |
-| `.txt` | Yes | Plain text |
-| `.docx` | No | Convert to PDF before placing here |
-| `.png` / `.jpg` | No | Scanned documents won't be parsed — use text PDFs |
+**O que o `/setup` aprende a partir do outcome.md:**
+- Quais tipos de função e empresas levaram a entrevistas (sinais de áreas de forte adequação)
+- Quais candidaturas não progrediram (informa a calibração de correspondência de experiência em `04-job-evaluation.md`)
+- O feedback da entrevista, se você o registrou, pode revelar novos candidatos STAR
 
 ---
 
-## Re-running `/setup`
+## Notas de formato de arquivo
 
-The command is designed to be re-run as your document collection grows. Each run:
+| Formato | Legível pelo `/setup` | Observações |
+|--------|--------------------------|-------------|
+| `.pdf` | Sim | Analisado diretamente com a ferramenta Read |
+| `.tex` | Sim | Fonte LaTeX — estrutura e conteúdo legíveis |
+| `.md` | Sim | Texto simples |
+| `.txt` | Sim | Texto simples |
+| `.docx` | Não | Converta para PDF antes de colocar aqui |
+| `.png` / `.jpg` | Não | Documentos escaneados não serão analisados — use PDFs de texto |
 
-1. Reads the current state of all skill files
-2. Compares extracted document content against what's already there
-3. Only proposes changes for content that is genuinely new or conflicting
-4. Never silently overwrites — conflicts are shown explicitly for your decision
+---
 
-**When to re-run:**
-- After adding a new LinkedIn export
-- After adding reference letters
-- After recording outcomes for completed applications
-- After updating your master CV
+## Reexecutando `/setup`
+
+O comando é projetado para ser executado novamente conforme sua coleção de documentos cresce. Cada execução:
+
+1. Lê o estado atual de todos os arquivos de habilidade
+2. Compara o conteúdo extraído dos documentos com o que já existe
+3. Propõe alterações apenas para conteúdo genuinamente novo ou conflitante
+4. Nunca sobrescreve silenciosamente — conflitos são exibidos explicitamente para você decidir
+
+**Quando reexecutar:**
+- Após adicionar uma nova exportação do LinkedIn
+- Após adicionar cartas de referência
+- Após registrar resultados de candidaturas concluídas
+- Após atualizar seu CV mestre

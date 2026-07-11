@@ -40,7 +40,7 @@ Reviews here are empirical. Bug reports are reproduced on master before the fix 
 ## Building for your own market? Do this instead
 
 1. Fork the repo and run `/add-portal` with your local job board - it scaffolds a portal skill matching the shipped contract, and `/scrape` picks it up automatically.
-2. Announce your fork in the pinned [Community forks & adaptations](https://github.com/MadsLorentzen/ai-job-search/discussions/78) discussion so others can find it.
+2. Announce your fork in the pinned [Community forks & adaptations](https://github.com/<owner>/ai-job-search/discussions/78) discussion so others can find it.
 
 Market-specific skills are genuinely valuable - they just live in forks, where their maintainers can test them and their users can find them.
 
@@ -50,31 +50,31 @@ Market-specific skills are genuinely valuable - they just live in forks, where t
 - **Personal-use boundaries**: portal skills that touch ToS-restricted sources carry a prominent personal-use-only warning, and CI deliberately makes no live portal requests. Don't "fix" that.
 - **LaTeX changes**: both templates must compile (`lualatex` for the CV, `xelatex` for the cover letter) and hold their exact page counts. CI smoke-checks this.
 
-Questions and proposals are welcome in [Discussions](https://github.com/MadsLorentzen/ai-job-search/discussions) - an Idea thread costs nothing and can save you building the wrong thing :-)
+Questions and proposals are welcome in [Discussions](https://github.com/<owner>/ai-job-search/discussions) - an Idea thread costs nothing and can save you building the wrong thing :-)
 
-[#17]: https://github.com/MadsLorentzen/ai-job-search/issues/17
-[#30]: https://github.com/MadsLorentzen/ai-job-search/issues/30
-[#31]: https://github.com/MadsLorentzen/ai-job-search/issues/31
-[#35]: https://github.com/MadsLorentzen/ai-job-search/issues/35
-[#36]: https://github.com/MadsLorentzen/ai-job-search/issues/36
-[#37]: https://github.com/MadsLorentzen/ai-job-search/issues/37
-[#39]: https://github.com/MadsLorentzen/ai-job-search/issues/39
-[#41]: https://github.com/MadsLorentzen/ai-job-search/issues/41
-[#43]: https://github.com/MadsLorentzen/ai-job-search/issues/43
-[#44]: https://github.com/MadsLorentzen/ai-job-search/issues/44
-[#49]: https://github.com/MadsLorentzen/ai-job-search/issues/49
-[#52]: https://github.com/MadsLorentzen/ai-job-search/issues/52
-[#54]: https://github.com/MadsLorentzen/ai-job-search/issues/54
-[#55]: https://github.com/MadsLorentzen/ai-job-search/issues/55
-[#56]: https://github.com/MadsLorentzen/ai-job-search/issues/56
-[#59]: https://github.com/MadsLorentzen/ai-job-search/issues/59
-[#60]: https://github.com/MadsLorentzen/ai-job-search/issues/60
-[#63]: https://github.com/MadsLorentzen/ai-job-search/issues/63
-[#64]: https://github.com/MadsLorentzen/ai-job-search/issues/64
-[#66]: https://github.com/MadsLorentzen/ai-job-search/issues/66
-[#67]: https://github.com/MadsLorentzen/ai-job-search/issues/67
-[#68]: https://github.com/MadsLorentzen/ai-job-search/issues/68
-[#72]: https://github.com/MadsLorentzen/ai-job-search/issues/72
-[#73]: https://github.com/MadsLorentzen/ai-job-search/issues/73
-[#75]: https://github.com/MadsLorentzen/ai-job-search/issues/75
-[#76]: https://github.com/MadsLorentzen/ai-job-search/issues/76
+[#17]: https://github.com/<owner>/ai-job-search/issues/17
+[#30]: https://github.com/<owner>/ai-job-search/issues/30
+[#31]: https://github.com/<owner>/ai-job-search/issues/31
+[#35]: https://github.com/<owner>/ai-job-search/issues/35
+[#36]: https://github.com/<owner>/ai-job-search/issues/36
+[#37]: https://github.com/<owner>/ai-job-search/issues/37
+[#39]: https://github.com/<owner>/ai-job-search/issues/39
+[#41]: https://github.com/<owner>/ai-job-search/issues/41
+[#43]: https://github.com/<owner>/ai-job-search/issues/43
+[#44]: https://github.com/<owner>/ai-job-search/issues/44
+[#49]: https://github.com/<owner>/ai-job-search/issues/49
+[#52]: https://github.com/<owner>/ai-job-search/issues/52
+[#54]: https://github.com/<owner>/ai-job-search/issues/54
+[#55]: https://github.com/<owner>/ai-job-search/issues/55
+[#56]: https://github.com/<owner>/ai-job-search/issues/56
+[#59]: https://github.com/<owner>/ai-job-search/issues/59
+[#60]: https://github.com/<owner>/ai-job-search/issues/60
+[#63]: https://github.com/<owner>/ai-job-search/issues/63
+[#64]: https://github.com/<owner>/ai-job-search/issues/64
+[#66]: https://github.com/<owner>/ai-job-search/issues/66
+[#67]: https://github.com/<owner>/ai-job-search/issues/67
+[#68]: https://github.com/<owner>/ai-job-search/issues/68
+[#72]: https://github.com/<owner>/ai-job-search/issues/72
+[#73]: https://github.com/<owner>/ai-job-search/issues/73
+[#75]: https://github.com/<owner>/ai-job-search/issues/75
+[#76]: https://github.com/<owner>/ai-job-search/issues/76

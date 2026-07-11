@@ -1,14 +1,14 @@
-# Disabled portal skills
+# Habilidades de portais desativadas
 
-Portal-search CLIs parked here are **ignored by `/scrape`**, which only discovers
-skills under `.agents/skills/*/SKILL.md`.
+As CLIs de busca por portais estacionadas aqui são **ignorada pelo `/scrape`**, que só descobre
+habilidades em `.agents/skills/*/SKILL.md`.
 
-The four Danish portals (jobindex, jobnet, jobbank, jobdanmark) were moved here when
-the workspace was switched to the Brazilian market (gupy-search, vagas-search) — kept
-intact rather than deleted so they remain available as worked examples of the
-portal-skill pattern.
+Os quatro portais dinamarqueses (jobindex, jobnet, jobbank, jobdanmark) foram movidos para cá quando
+o workspace foi alterado para o mercado brasileiro (gupy-search, vagas-search) — mantidos
+intactos em vez de excluídos para continuarem disponíveis como exemplos do
+padrão de habilidade de portal.
 
-To re-enable one, move it back:
+Para reativar um, mova-o de volta:
 
 ```bash
 git mv .agents/skills-disabled/<name> .agents/skills/<name>
