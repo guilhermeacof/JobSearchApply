@@ -13,7 +13,7 @@ O painel encontra as vagas, dá uma nota de 0 a 100 para cada uma e prepara os d
 
 ## ⚙️ Antes do primeiro uso (uma vez, por alguém com prática)
 
-O painel depende de alguns programas instalados na máquina: **Claude Code** (logado), **Node.js**, **Bun** e **LaTeX (MiKTeX)**. Passo a passo em [`painel/LEIA-ME.txt`](painel/LEIA-ME.txt).
+O painel depende de alguns programas instalados na máquina: **Claude Code** (logado), **Node.js**, **Bun** e **LaTeX (MiKTeX)**. O **Git** é opcional — se estiver instalado, ao abrir o painel ele **avisa quando há uma versão nova no GitHub** e oferece baixar. Passo a passo em [`painel/LEIA-ME.txt`](painel/LEIA-ME.txt).
 
 ## 📚 Mais
 

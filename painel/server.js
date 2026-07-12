@@ -28,6 +28,78 @@ function writeConfig(cfg) {
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2));
 }
 
+// ---------- Respostas de formulário (perguntas da Gupy etc.) ----------
+// Guarda o que a pessoa digita para os campos que os sites pedem na hora de se
+// candidatar (pretensão, última remuneração, disponibilidade e QUALQUER pergunta
+// específica da vaga). Fica salvo para ela copiar e colar, e como registro.
+const ANSWERS_FILE = path.join(WORKSPACE, "documents", "form_answers.json");
+
+// Perguntas comuns já sugeridas (rótulos; a pessoa preenche os valores uma vez).
+const CAMPOS_SUGERIDOS = [
+  "Pretensão salarial (CLT)",
+  "Pretensão salarial (PJ)",
+  "Última remuneração",
+  "Regime de contratação aceito (CLT/PJ)",
+  "Modelo de trabalho (remoto/híbrido/presencial)",
+  "Disponibilidade para início",
+  "Cidade / Estado",
+  "LinkedIn",
+];
+
+function camposSugeridos() {
+  return CAMPOS_SUGERIDOS.map((pergunta) => ({ pergunta, resposta: "" }));
+}
+
+function readAnswers() {
+  try {
+    const j = JSON.parse(fs.readFileSync(ANSWERS_FILE, "utf8"));
+    if (!Array.isArray(j.padrao)) j.padrao = camposSugeridos();
+    if (!j.vagas || typeof j.vagas !== "object") j.vagas = {};
+    return j;
+  } catch {
+    return { padrao: camposSugeridos(), vagas: {} };
+  }
+}
+function writeAnswers(store) {
+  fs.mkdirSync(path.dirname(ANSWERS_FILE), { recursive: true });
+  fs.writeFileSync(ANSWERS_FILE, JSON.stringify(store, null, 2));
+}
+
+// Limpa e limita a lista de campos vinda do painel.
+function sanitizeCampos(campos) {
+  if (!Array.isArray(campos)) return [];
+  return campos
+    .map((c) => ({
+      pergunta: String((c && c.pergunta) || "").slice(0, 200).trim(),
+      resposta: String((c && c.resposta) || "").slice(0, 2000).trim(),
+    }))
+    .filter((c) => c.pergunta || c.resposta)
+    .slice(0, 40);
+}
+
+// Escreve uma cópia legível (.md) das respostas de uma vaga, para registro/rastreabilidade.
+function escreverSnapshotRespostas(vaga) {
+  try {
+    const dir = path.join(WORKSPACE, "documents", "respostas");
+    fs.mkdirSync(dir, { recursive: true });
+    const base = (vaga.company || "vaga") + " - " + (vaga.title || "");
+    const safe = base.replace(/[^\w.\-() À-ÿ]/g, "_").slice(0, 120).trim() || "vaga";
+    const linhas = [
+      "# Respostas do formulário — " + (vaga.title || "") + (vaga.company ? " (" + vaga.company + ")" : ""),
+      "",
+      vaga.url ? "Vaga: " + vaga.url : "",
+      "Atualizado em: " + new Date().toLocaleString("pt-BR"),
+      "",
+    ];
+    for (const c of vaga.campos || []) {
+      linhas.push("**" + c.pergunta + "**");
+      linhas.push(c.resposta || "_(a preencher)_");
+      linhas.push("");
+    }
+    fs.writeFileSync(path.join(dir, safe + ".md"), linhas.filter((l) => l !== undefined).join("\n"));
+  } catch { /* registro é melhor-esforço; não quebra o salvamento */ }
+}
+
 // Caminho do executável do Claude Code — detectado dinamicamente, sem caminho fixo:
 // 1) variável de ambiente CLAUDE_BIN, se definida;
 // 2) o local padrão de instalação no Windows (%USERPROFILE%\.local\bin\claude.exe);
@@ -167,6 +239,20 @@ function buildState() {
 
 // ---------- Ponte com o Claude Code (streaming via SSE) ----------
 
+// Diz se a pasta do projeto está autorizada (confiável) no Claude Code.
+// Se não conseguir checar, assume que sim para não atrapalhar.
+function projetoConfiavel() {
+  try {
+    const cfgPath = path.join(os.homedir(), ".claude.json");
+    const root = path.join(__dirname, "..");
+    const bs = root, fw = root.replace(/\\/g, "/");
+    const j = JSON.parse(fs.readFileSync(cfgPath, "utf8"));
+    const pr = j.projects || {};
+    return [bs, fw, bs[0].toLowerCase() + bs.slice(1), fw[0].toLowerCase() + fw.slice(1)]
+      .some((k) => pr[k] && pr[k].hasTrustDialogAccepted === true);
+  } catch { return true; }
+}
+
 function runClaude(prompt, res) {
   res.writeHead(200, {
     "Content-Type": "text/event-stream; charset=utf-8",
@@ -293,6 +379,12 @@ function runSearch(cargo, remote, res) {
   res.on("close", () => { cancelled = true; if (curChild) { try { curChild.kill(); } catch {} } });
 
   send("progress", { pct: 0, msg: "Preparando os termos de busca para “" + cargo + "”…" });
+
+  // Se a pasta não estiver autorizada, avisa o painel (para mostrar o banner amigável).
+  // A busca segue mesmo assim, pois os portais funcionam sem depender dessa autorização.
+  if (!projetoConfiavel()) {
+    send("progress", { pct: 0, trust: true, msg: "Atenção: esta pasta ainda não foi autorizada (workspace has not been trusted)." });
+  }
 
   // Fase 1: o Claude expande as variações de escrita do cargo.
   const vPrompt =
@@ -423,6 +515,28 @@ const server = http.createServer((req, res) => {
     return runSearch(cargo, remote, res);
   }
 
+  // Autoriza esta pasta no Claude Code (resolve o erro de "workspace not trusted"),
+  // marcando o projeto como confiável no ~/.claude.json. Sem a pessoa mexer em arquivo.
+  if (u.pathname === "/api/trust" && req.method === "POST") {
+    try {
+      const cfgPath = path.join(os.homedir(), ".claude.json");
+      const root = path.join(__dirname, ".."); // raiz do projeto (onde fica o .git)
+      const bs = root, fw = root.replace(/\\/g, "/");
+      const variants = [...new Set([bs, fw, bs[0].toLowerCase() + bs.slice(1), fw[0].toLowerCase() + fw.slice(1)])];
+      let j = {};
+      try { j = JSON.parse(fs.readFileSync(cfgPath, "utf8")); } catch {}
+      try { fs.copyFileSync(cfgPath, cfgPath + ".bak"); } catch {}
+      j.projects = j.projects || {};
+      for (const k of variants) { j.projects[k] = j.projects[k] || {}; j.projects[k].hasTrustDialogAccepted = true; }
+      fs.writeFileSync(cfgPath, JSON.stringify(j, null, 2));
+      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      return res.end(JSON.stringify({ ok: true, path: root }));
+    } catch (e) {
+      res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+      return res.end(JSON.stringify({ erro: e.message }));
+    }
+  }
+
   if (u.pathname === "/api/run") {
     const prompt = u.searchParams.get("prompt");
     if (!prompt) { res.writeHead(400); return res.end("prompt ausente"); }
@@ -446,6 +560,52 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify({ ok: true, cargo }));
       } catch (e) {
         res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({ erro: e.message }));
+      }
+    });
+    return;
+  }
+
+  // Respostas de formulário (perguntas da Gupy etc.).
+  // GET  /api/answers?url=…  → campos desta vaga (ou os padrão, se ainda não houver).
+  //                            Sem url → edição dos valores PADRÃO reutilizáveis.
+  if (u.pathname === "/api/answers" && req.method === "GET") {
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    const store = readAnswers();
+    const url = (u.searchParams.get("url") || "").trim();
+    if (!url) return res.end(JSON.stringify({ global: true, campos: store.padrao }));
+    const v = store.vagas[url];
+    // Se a vaga ainda não tem respostas, começa a partir dos valores padrão.
+    const campos = v && Array.isArray(v.campos) && v.campos.length ? v.campos : store.padrao;
+    return res.end(JSON.stringify({ global: false, campos, atualizadoEm: v && v.atualizadoEm || null }));
+  }
+  // POST /api/answers  {url?, title?, company?, campos:[{pergunta,resposta}], salvarPadrao?}
+  if (u.pathname === "/api/answers" && req.method === "POST") {
+    const chunks = [];
+    req.on("data", (c) => chunks.push(c));
+    req.on("end", () => {
+      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      try {
+        const body = JSON.parse(Buffer.concat(chunks).toString() || "{}");
+        const campos = sanitizeCampos(body.campos);
+        const url = String(body.url || "").trim();
+        const store = readAnswers();
+        if (url) {
+          const vaga = {
+            title: String(body.title || "").slice(0, 300),
+            company: String(body.company || "").slice(0, 200),
+            url,
+            campos,
+            atualizadoEm: new Date().toISOString(),
+          };
+          store.vagas[url] = vaga;
+          escreverSnapshotRespostas(vaga);
+        }
+        // Salva como padrão quando pedido, ou quando a edição é dos próprios padrões.
+        if (body.salvarPadrao || !url) store.padrao = campos;
+        writeAnswers(store);
+        res.end(JSON.stringify({ ok: true, salvos: campos.length }));
+      } catch (e) {
         res.end(JSON.stringify({ erro: e.message }));
       }
     });

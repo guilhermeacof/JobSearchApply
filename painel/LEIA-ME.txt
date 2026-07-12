@@ -15,6 +15,15 @@ O painel NÃO envia nada sozinho: ele encontra as vagas,
 avalia e escreve o currículo e a carta. O clique final de
 "enviar" no site da empresa é sempre seu.
 
+DICA - Respostas do formulário (pretensão, etc.):
+Quando o site (Gupy) pedir campos como "Pretensão salarial",
+"Última remuneração" ou perguntas específicas da vaga, use:
+ - "Meus dados para formulários" (na tela inicial): preencha
+   uma vez seus valores e o painel reusa nas próximas vagas.
+ - "Respostas do formulário" (ao abrir uma vaga): ajuste e
+   adicione as perguntas daquela vaga. Cada resposta tem um
+   botão COPIAR para você colar no site. Fica tudo salvo.
+
 
 INSTALAÇÃO (feita UMA VEZ, por alguém com um pouco de prática)
 --------------------------------------------------------
@@ -39,6 +48,12 @@ pois exigem administrador e/ou login:
   4. LaTeX / MiKTeX  (para gerar os PDFs do currículo)
      Baixe e instale: https://miktex.org
 
+  5. Git  (OPCIONAL — só para receber avisos de atualização)
+     Baixe: https://git-scm.com
+     Com o Git instalado, toda vez que você abrir o painel ele
+     avisa se há uma versão nova no GitHub e oferece baixar.
+     Sem o Git, o painel funciona igual, só não avisa de updates.
+
 Para conferir se o Claude Code está acessível, abra o
 Prompt de Comando e digite:  claude --version
 Se aparecer um número de versão, está pronto.
@@ -53,6 +68,19 @@ completo do executável e edite a 1ª linha de configuração no
         const CLAUDE_BIN = process.env.CLAUDE_BIN || "claude";
 pelo caminho, por exemplo:
         const CLAUDE_BIN = "C:\\Users\\SEU_USUARIO\\.local\\bin\\claude.exe";
+
+
+SE APARECER "workspace has not been trusted" (pasta não autorizada)
+--------------------------------------------------------
+Isso costuma acontecer UMA vez, depois de mover, renomear ou
+copiar a pasta para outro computador. NÃO é erro seu e nada
+foi perdido. O painel mostra um aviso em português com o botão
+"Autorizar e liberar" — clique nele e pronto. Depois, é só
+clicar de novo no botão da ação que você queria (buscar,
+avaliar, etc.).
+
+Se preferir resolver na mão: abra o programa "Claude Code"
+uma vez dentro desta pasta e responda "Sim, confio" à pergunta.
 
 
 OBSERVAÇÕES

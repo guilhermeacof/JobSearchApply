@@ -64,6 +64,10 @@ documents/applications/**
 # Personal job search tracking
 job_search_tracker.csv
 
+# Respostas de formulários preenchidas no painel (dados pessoais)
+documents/form_answers.json
+documents/respostas/**
+
 # Upskill reports (personal output)
 upskill/*.md
 

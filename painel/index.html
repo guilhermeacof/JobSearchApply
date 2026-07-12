@@ -84,6 +84,29 @@ input[type=file]{font:inherit;font-size:13px;max-width:220px}
 .cancelbtn{border:1px solid var(--urgent);color:var(--urgent);background:var(--surface);border-radius:9px;padding:7px 14px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
 .cancelbtn:hover{background:var(--urgent-soft)}
 .applybox{margin-top:14px;padding-top:16px;border-top:1px dashed var(--line)}
+/* Banner de autorização única (pasta não confiável) */
+.trustbox{margin-top:22px;display:none;gap:16px;align-items:flex-start;
+  background:var(--accent-soft);border:1.5px solid var(--accent);border-radius:16px;padding:20px 22px;box-shadow:var(--shadow)}
+.trustbox.on{display:flex}
+.trustbox .tb-ic{font-size:30px;line-height:1;flex:0 0 auto}
+.trustbox h3{margin:0 0 6px;font-size:17px;color:var(--ink)}
+.trustbox p{margin:0 0 8px;font-size:14px;line-height:1.5;color:var(--ink-2)}
+.trustbox .tb-actions{display:flex;align-items:center;gap:14px;margin:12px 0 6px}
+.trustbox .tb-state{font-size:13.5px;font-weight:600;color:var(--accent)}
+.trustbox .tb-alt{font-size:12.5px;color:var(--ink-2);opacity:.85;margin-top:6px}
+/* Modal de respostas do formulário */
+.ansintro{font-size:13.5px;color:var(--ink-2);line-height:1.5;margin:0 0 14px}
+.anslist{display:flex;flex-direction:column;gap:10px}
+.ansrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ansrow .ans-q{flex:1 1 200px;min-width:0;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);font:inherit;font-size:13px;font-weight:600}
+.ansrow .ans-a{flex:2 1 240px;min-width:0;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);font:inherit;font-size:13.5px}
+.ansrow input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.ans-copy,.ans-del{flex:0 0 auto;border:1px solid var(--line);background:var(--bg);color:var(--ink-2);border-radius:8px;width:34px;height:34px;font-size:14px;cursor:pointer;line-height:1}
+.ans-copy:hover{border-color:var(--accent);background:var(--accent-soft)}
+.ans-del:hover{border-color:var(--urgent);color:var(--urgent);background:var(--urgent-soft)}
+.ans-copy.ok{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+.anschk{display:flex;align-items:center;gap:9px;margin-top:16px;font-size:13.5px;color:var(--ink);cursor:pointer}
+.anschk input{width:17px;height:17px;accent-color:var(--accent)}
 .applybox label{font-weight:600;font-size:14px;display:block;margin-bottom:8px}
 .applyrow{display:flex;gap:8px}
 .applyrow input{flex:1;min-width:0;padding:12px 14px;border:1px solid var(--line);border-radius:10px;
@@ -245,6 +268,11 @@ tr.aplicada td:first-child{box-shadow:inset 3px 0 0 var(--good)}
           <span>Ver minhas candidaturas
             <small>Mostra o que já foi enviado e como está cada processo</small></span>
         </button>
+        <button class="btn" id="dadosBtn">
+          <span class="ico">📝</span>
+          <span>Meus dados para formulários
+            <small>Pretensão, disponibilidade… você preenche uma vez e o sistema reusa</small></span>
+        </button>
       </div>
 
       <div class="applybox">
@@ -297,6 +325,23 @@ tr.aplicada td:first-child{box-shadow:inset 3px 0 0 var(--good)}
     <pre id="out"></pre>
   </div>
 
+  <!-- Aviso amigável quando a pasta ainda não foi autorizada no Claude Code -->
+  <div class="trustbox" id="trustBox" hidden>
+    <div class="tb-ic">🔒</div>
+    <div class="tb-body">
+      <h3>Falta uma autorização única desta pasta</h3>
+      <p>O assistente precisa da sua permissão para trabalhar nesta pasta. Isso costuma
+         acontecer <b>uma única vez</b> — normalmente depois que a pasta foi movida, renomeada
+         ou copiada para outro computador. Nenhum dado seu foi perdido.</p>
+      <div class="tb-actions">
+        <button class="btn primary" id="trustBtn" style="width:auto">✅ Autorizar e liberar</button>
+        <span class="tb-state" id="trustState"></span>
+      </div>
+      <p class="tb-alt">Prefere fazer manualmente? Abra o programa <b>Claude Code</b> uma vez
+         dentro desta pasta e responda <b>“Sim, confio”</b> à pergunta que aparecer.</p>
+    </div>
+  </div>
+
   <div class="overlay" id="overlay">
     <div class="modal">
       <button class="mclose" id="mclose" aria-label="Fechar">×</button>
@@ -325,8 +370,33 @@ tr.aplicada td:first-child{box-shadow:inset 3px 0 0 var(--good)}
 
         <div class="modal-actions">
           <button class="btn primary" id="mAddReval"><span class="ico">✅</span><span>Adicionar ao currículo e reavaliar</span></button>
+          <button class="btn" id="mAnswers"><span class="ico">📝</span><span>Respostas do formulário</span></button>
           <button class="btn" id="mApply"><span class="ico">✍️</span><span>Preparar candidatura</span></button>
           <button class="btn" id="mSite"><span class="ico">🌐</span><span>Ver no site</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de respostas do formulário (campos da Gupy etc.) -->
+  <div class="overlay" id="ansOverlay">
+    <div class="modal">
+      <button class="mclose" id="ansClose" aria-label="Fechar">×</button>
+      <div class="modal-h">
+        <h3 id="ansTitle">Respostas do formulário</h3>
+        <div class="co" id="ansCo"></div>
+      </div>
+      <div class="modal-b">
+        <p class="ansintro" id="ansIntro">Preencha o que a Gupy costuma pedir e <b>qualquer pergunta específica desta vaga</b>.
+          Fica salvo aqui e você <b>copia com um clique</b> na hora de preencher no site.</p>
+        <div id="ansList" class="anslist"></div>
+        <button class="linkbtn" id="ansAdd" style="margin-top:6px">➕ Adicionar pergunta</button>
+        <label class="anschk" id="ansDefaultWrap"><input type="checkbox" id="ansDefault"> Usar estes valores como <b>padrão</b> nas próximas vagas</label>
+        <div class="mbusy" id="ansBusy" hidden><span class="spin"></span> <span>Salvando…</span></div>
+        <div class="mresult" id="ansMsg" hidden></div>
+        <div class="modal-actions">
+          <button class="btn primary" id="ansSave"><span class="ico">💾</span><span>Salvar respostas</span></button>
+          <button class="btn" id="ansCopyAll"><span class="ico">📋</span><span>Copiar tudo</span></button>
         </div>
       </div>
     </div>
@@ -453,7 +523,7 @@ $("#jobs").addEventListener("click",(e)=>{
 });
 $("#mclose").addEventListener("click", closeDetail);
 $("#overlay").addEventListener("click",(e)=>{ if(e.target.id==="overlay") closeDetail(); });
-document.addEventListener("keydown",(e)=>{ if(e.key==="Escape") closeDetail(); });
+document.addEventListener("keydown",(e)=>{ if(e.key==="Escape"){ closeAnswers(); closeDetail(); } });
 
 $("#mSite").addEventListener("click",()=>{ if(CURRENT) window.open(CURRENT.url,"_blank","noopener"); });
 $("#mApply").addEventListener("click",()=>{
@@ -463,6 +533,76 @@ $("#mApply").addEventListener("click",()=>{
   run("Execute o fluxo de candidatura (/apply) para esta vaga: "+url+
       " . Avalie a adequação, gere o currículo e a carta direcionados em português, compile os PDFs e me diga onde os arquivos ficaram salvos.");
 });
+// ---------- Respostas do formulário (campos da Gupy etc.) ----------
+let ANS_JOB=null; // vaga atual do modal de respostas (null = editando os valores padrão)
+function ansRowHtml(pergunta,resposta){
+  const p=(pergunta||"").replace(/"/g,"&quot;"), r=(resposta||"").replace(/"/g,"&quot;");
+  return '<div class="ansrow">'
+    +'<input class="ans-q" placeholder="Pergunta (ex.: Pretensão salarial)" value="'+p+'">'
+    +'<input class="ans-a" placeholder="Sua resposta" value="'+r+'">'
+    +'<button class="ans-copy" title="Copiar resposta" type="button">📋</button>'
+    +'<button class="ans-del" title="Remover" type="button">✕</button>'
+    +'</div>';
+}
+function renderAnsRows(campos){
+  $("#ansList").innerHTML=(campos&&campos.length?campos:[{pergunta:"",resposta:""}]).map(c=>ansRowHtml(c.pergunta,c.resposta)).join("");
+}
+function coletarCampos(){
+  return Array.from(document.querySelectorAll("#ansList .ansrow")).map(row=>({
+    pergunta:row.querySelector(".ans-q").value.trim(),
+    resposta:row.querySelector(".ans-a").value.trim(),
+  })).filter(c=>c.pergunta||c.resposta);
+}
+async function openAnswers(job){
+  ANS_JOB=job||null;
+  const global=!job;
+  $("#ansTitle").textContent=global?"Meus dados para formulários":"Respostas do formulário";
+  $("#ansCo").textContent=global?"Valores reutilizados em todas as vagas":((job.company||"")+(job.title?" — "+job.title:""));
+  $("#ansIntro").innerHTML=global
+    ? "Preencha uma vez os campos que os sites costumam pedir. O sistema <b>reusa estes valores</b> como ponto de partida em cada vaga."
+    : "Preencha o que a Gupy costuma pedir e <b>qualquer pergunta específica desta vaga</b>. Fica salvo aqui e você <b>copia com um clique</b> na hora de preencher no site.";
+  $("#ansDefaultWrap").style.display=global?"none":"";
+  $("#ansDefault").checked=false;
+  $("#ansMsg").hidden=true; $("#ansBusy").hidden=true;
+  $("#ansList").innerHTML='<p style="color:var(--ink-2);margin:0">Carregando…</p>';
+  $("#ansOverlay").classList.add("on");
+  try{
+    const r=await fetch("/api/answers"+(global?"":"?url="+encodeURIComponent(job.url)));
+    const d=await r.json();
+    renderAnsRows(d.campos);
+  }catch(e){ renderAnsRows([]); }
+}
+function closeAnswers(){ $("#ansOverlay").classList.remove("on"); }
+$("#ansClose").addEventListener("click",closeAnswers);
+$("#ansOverlay").addEventListener("click",(e)=>{ if(e.target.id==="ansOverlay") closeAnswers(); });
+$("#ansAdd").addEventListener("click",()=>{ $("#ansList").insertAdjacentHTML("beforeend",ansRowHtml("","")); });
+$("#ansList").addEventListener("click",(e)=>{
+  const del=e.target.closest(".ans-del"); if(del){ del.closest(".ansrow").remove(); return; }
+  const cp=e.target.closest(".ans-copy");
+  if(cp){ const val=cp.closest(".ansrow").querySelector(".ans-a").value;
+    navigator.clipboard.writeText(val).then(()=>{ cp.textContent="✓"; cp.classList.add("ok");
+      setTimeout(()=>{ cp.textContent="📋"; cp.classList.remove("ok"); },1100); }); }
+});
+$("#ansCopyAll").addEventListener("click",()=>{
+  const txt=coletarCampos().map(c=>c.pergunta+": "+c.resposta).join("\n");
+  navigator.clipboard.writeText(txt).then(()=>{
+    const m=$("#ansMsg"); m.hidden=false; m.textContent="📋 Tudo copiado. É só colar no formulário do site."; });
+});
+$("#ansSave").addEventListener("click",async()=>{
+  const campos=coletarCampos();
+  const body={ campos, salvarPadrao:$("#ansDefault").checked };
+  if(ANS_JOB){ body.url=ANS_JOB.url; body.title=ANS_JOB.title||""; body.company=ANS_JOB.company||""; }
+  $("#ansBusy").hidden=false; $("#ansMsg").hidden=true; $("#ansSave").disabled=true;
+  try{
+    const r=await fetch("/api/answers",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    const d=await r.json(); $("#ansBusy").hidden=true; $("#ansSave").disabled=false;
+    const m=$("#ansMsg"); m.hidden=false;
+    m.textContent=d.ok?("✔ Salvo! "+d.salvos+" campo(s) guardado(s)."+(body.salvarPadrao?" Também virou seu padrão.":"")):("Não consegui salvar: "+(d.erro||""));
+  }catch(e){ $("#ansBusy").hidden=true; $("#ansSave").disabled=false; const m=$("#ansMsg"); m.hidden=false; m.textContent="Falha ao salvar: "+e.message; }
+});
+$("#mAnswers").addEventListener("click",()=>{ if(CURRENT) openAnswers(CURRENT); });
+$("#dadosBtn").addEventListener("click",()=>openAnswers(null));
+
 function setBusy(txt){ $("#mBusy").hidden=false; $("#mBusyTxt").textContent=txt; $("#mResult").hidden=true;
   $("#mAnalyze").disabled=true; $("#mAddReval").disabled=true; }
 function clearBusy(){ $("#mBusy").hidden=true; $("#mAnalyze").disabled=false; $("#mAddReval").disabled=false; }
@@ -533,13 +673,37 @@ function run(prompt){
 
   runEv = new EventSource("/api/run?prompt="+encodeURIComponent(prompt));
   runEv.addEventListener("status",e=>{ $("#cstatus").textContent=JSON.parse(e.data); });
-  runEv.addEventListener("saida",e=>{ $("#out").textContent += JSON.parse(e.data); $("#out").scrollTop=$("#out").scrollHeight; });
-  runEv.addEventListener("erro",e=>{ $("#out").textContent += "\n⚠ "+JSON.parse(e.data)+"\n"; });
+  runEv.addEventListener("saida",e=>{ const t=JSON.parse(e.data); $("#out").textContent += t; $("#out").scrollTop=$("#out").scrollHeight; detectarConfianca(t); });
+  runEv.addEventListener("erro",e=>{ const t=JSON.parse(e.data); $("#out").textContent += "\n⚠ "+t+"\n"; detectarConfianca(t); });
   const done=(msg)=>{ if(runEv){runEv.close();runEv=null;} running=false; $("#dot").style.display="none";
     $("#cstatus").textContent=msg; document.querySelectorAll(".btn").forEach(b=>b.disabled=false); loadState(); };
   runEv.addEventListener("fim",e=>done(JSON.parse(e.data)));
   runEv.onerror=()=>{ if(running) done("Conexão encerrada."); };
 }
+// Detecta o erro de "pasta não confiável" do Claude Code e mostra o banner amigável.
+function detectarConfianca(txt){
+  if(!txt) return;
+  if(/not been trusted|hasTrustDialogAccepted|not.*trusted/i.test(txt)){
+    const box=$("#trustBox"); box.hidden=false; box.classList.add("on");
+    box.scrollIntoView({behavior:"smooth",block:"center"});
+  }
+}
+// Botão "Autorizar e liberar": pede ao servidor para marcar a pasta como confiável.
+$("#trustBtn").addEventListener("click",async()=>{
+  const btn=$("#trustBtn"), st=$("#trustState");
+  btn.disabled=true; st.textContent="Autorizando…";
+  try{
+    const r=await fetch("/api/trust",{method:"POST"});
+    const d=await r.json();
+    if(d.ok){
+      st.textContent="✔ Pronto! Pasta autorizada.";
+      $("#trustBox").querySelector(".tb-body").insertAdjacentHTML("beforeend",
+        '<p style="color:var(--accent);font-weight:600;margin-top:8px">'
+        +'Agora é só clicar de novo no botão da ação que você queria (buscar, avaliar, etc.).</p>');
+    } else { st.textContent="Não consegui autorizar automaticamente. Tente a forma manual acima."; btn.disabled=false; }
+  }catch(e){ st.textContent="Falha ao autorizar: "+e.message; btn.disabled=false; }
+});
+
 // Cancelar uma ação em andamento (fecha a conexão → o servidor mata o processo).
 $("#cCancel").addEventListener("click",()=>{
   if(runEv){ runEv.close(); runEv=null; }
@@ -560,6 +724,7 @@ function runSearch(cargo){
   searchEv = new EventSource("/api/search?cargo="+encodeURIComponent(cargo)+"&remote="+encodeURIComponent(modelo));
   searchEv.addEventListener("progress",e=>{ const d=JSON.parse(e.data);
     if(d.msg) $("#sMsg").textContent=d.msg;
+    if(d.trust) detectarConfianca(d.msg);
     if(d.pct!=null){ $("#sPct").textContent=d.pct+"%"; $("#sFill").style.width=d.pct+"%"; } });
   const done=(msg,ok)=>{ if(searchEv){searchEv.close();searchEv=null;} running=false;
     document.querySelectorAll(".btn").forEach(b=>b.disabled=false);

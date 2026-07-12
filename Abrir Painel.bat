@@ -54,6 +54,67 @@ if "!FALTA!"=="1" (
 echo    Tudo certo com os programas necessarios.
 echo.
 
+REM ============================================================
+REM  Verificar se ha atualizacao disponivel no GitHub
+REM ============================================================
+where git >nul 2>&1
+if not !errorlevel!==0 (
+  echo    [DICA] Instale o Git para receber avisos de atualizacao ^(opcional^): https://git-scm.com
+  echo.
+  goto :depois_update
+)
+if not exist ".git" (
+  echo    [DICA] Baixe o projeto via "git clone" para receber atualizacoes. Seguindo.
+  echo.
+  goto :depois_update
+)
+echo    Verificando se ha atualizacao disponivel...
+set GIT_TERMINAL_PROMPT=0
+set GIT_HTTP_LOW_SPEED_LIMIT=1000
+set GIT_HTTP_LOW_SPEED_TIME=8
+git fetch --quiet 2>nul
+if not !errorlevel!==0 (
+  echo    [AVISO] Nao deu para verificar atualizacoes ^(sem internet?^). Seguindo.
+  echo.
+  goto :depois_update
+)
+set BEHIND=0
+for /f "delims=" %%c in ('git rev-list --count HEAD..@{u} 2^>nul') do set BEHIND=%%c
+if "!BEHIND!"=="0" (
+  echo    [ OK ] Voce esta na versao mais recente.
+  echo.
+  goto :depois_update
+)
+echo.
+echo   ============================================================
+echo    ATENCAO: ATUALIZACAO DISPONIVEL
+echo    Ha !BEHIND! novidade^(s^) publicada^(s^) no GitHub.
+echo   ============================================================
+echo.
+set RESP=
+set /p RESP=   Deseja baixar a atualizacao agora? [S/N]:
+if /i not "!RESP!"=="S" (
+  echo    Ok, seguindo com a versao atual.
+  echo.
+  goto :depois_update
+)
+echo.
+echo    Baixando atualizacao...
+git pull --ff-only
+if !errorlevel!==0 (
+  echo.
+  echo    [ OK ] Atualizado com sucesso^!
+  echo    Feche esta janela e abra o "Abrir Painel.bat" de novo para usar a nova versao.
+  echo.
+  pause
+  exit /b
+)
+echo.
+echo    [AVISO] Nao consegui atualizar automaticamente ^(pode haver alteracoes locais^).
+echo    Seguindo com a versao atual. Para atualizar depois, rode:  git pull
+echo.
+:depois_update
+
 REM --- Dependencias do projeto: baixa so na primeira vez, mostrando progresso ---
 if not exist "painel\.deps-ok" (
   echo    Baixando as dependencias do projeto pela primeira vez...
