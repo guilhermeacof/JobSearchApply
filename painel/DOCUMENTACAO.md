@@ -98,6 +98,17 @@ Navegador (index.html)  ──HTTP──>  server.js (Node, local)  ──stdin�
 
 ## Changelog
 
+### 2026-07-12 — correção: spinner não sumia ao terminar a reavaliação
+- **Bug:** depois de "Adicionar ao currículo e reavaliar", o resultado (ex.: 90 → 95)
+  aparecia, mas o spinner "Ajustando seu currículo…" continuava girando, dando a
+  impressão de que não havia terminado. Mesmo problema no spinner do modal de respostas.
+- **Causa:** o atributo HTML `hidden` só aplica `display:none` pela folha de estilo do
+  navegador (baixa especificidade); a classe `.mbusy{display:flex}` vencia essa regra,
+  então `hidden=true` não escondia de fato o elemento.
+- **Correção:** regra global `[hidden]{display:none!important}`, garantindo que qualquer
+  elemento com `hidden` fique escondido. Testado no navegador: o spinner passa de
+  `flex` (visível) para `none` (escondido) ao concluir.
+
 ### 2026-07-12 — aviso de atualização disponível no BAT
 - Ao abrir o `Abrir Painel.bat`, ele agora **avisa se há uma versão nova no GitHub**:
   - Faz `git fetch` e compara o local com `origin/main` (`git rev-list --count HEAD..@{u}`).
