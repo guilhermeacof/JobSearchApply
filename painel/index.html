@@ -107,6 +107,32 @@ input[type=file]{font:inherit;font-size:13px;max-width:220px}
 .ans-copy.ok{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
 .anschk{display:flex;align-items:center;gap:9px;margin-top:16px;font-size:13.5px;color:var(--ink);cursor:pointer}
 .anschk input{width:17px;height:17px;accent-color:var(--accent)}
+/* Seleção em massa de vagas */
+.selcol{width:34px;text-align:center}
+.selcol input{width:17px;height:17px;accent-color:var(--accent);cursor:pointer}
+.bulkbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 12px;padding:10px 14px;
+  background:var(--accent-soft);border:1px solid var(--accent);border-radius:12px}
+.bulkbar .bulkn{font-weight:700;color:var(--accent);font-size:13.5px}
+.bulkbar .btn{width:auto;padding:8px 12px}
+/* Painel do currículo */
+.cvpanel{margin-top:22px}
+.cvhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+.cvlbl{font-weight:600;font-size:14px}
+.cvhead select{flex:1 1 260px;min-width:0;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit;font-size:14px}
+.cvhead select:focus{outline:2px solid var(--accent);outline-offset:1px}
+.cveditor{margin-top:16px;padding-top:16px;border-top:1px dashed var(--line)}
+.cvedhint{font-size:13px;color:var(--ink-2);margin:0 0 10px;line-height:1.5}
+#cvText{width:100%;box-sizing:border-box;padding:12px;border:1px solid var(--line);border-radius:10px;
+  background:var(--bg);color:var(--ink);font-family:ui-monospace,Consolas,"Courier New",monospace;font-size:12.5px;line-height:1.5;resize:vertical}
+#cvText:focus{outline:2px solid var(--accent);outline-offset:1px}
+.cvedactions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}
+.cvstate{font-size:13.5px;font-weight:600;color:var(--accent)}
+.cvlog{margin-top:12px;padding:12px;background:#2a1512;border:1px solid var(--urgent);border-radius:10px;
+  color:#f0b8a8;font-family:ui-monospace,Consolas,monospace;font-size:12px;white-space:pre-wrap;max-height:240px;overflow:auto}
+.bulkvagas{display:inline-block;margin-left:6px;font-size:11.5px;font-weight:700;color:var(--accent);
+  background:var(--accent-soft);border-radius:99px;padding:1px 8px;vertical-align:middle}
+.bulklacuna{display:flex;gap:8px;align-items:flex-start;margin:6px 0;font-size:13px;color:var(--ink-2)}
+.bulklacuna .x{color:var(--urgent);font-weight:700}
 .applybox label{font-weight:600;font-size:14px;display:block;margin-bottom:8px}
 .applyrow{display:flex;gap:8px}
 .applyrow input{flex:1;min-width:0;padding:12px 14px;border:1px solid var(--line);border-radius:10px;
@@ -299,12 +325,46 @@ tr.aplicada td:first-child{box-shadow:inset 3px 0 0 var(--good)}
         <input type="number" id="notaMin" min="0" max="100" value="70" style="width:64px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;display:none">
       </div>
       <p class="sub" id="jobsSub">As mais bem avaliadas para o seu perfil aparecem primeiro.</p>
+
+      <!-- Barra de ações em massa (aparece quando há vagas marcadas) -->
+      <div class="bulkbar" id="bulkbar" hidden>
+        <span class="bulkn" id="bulkN">0 selecionadas</span>
+        <button class="btn" id="bulkAnalyze"><span class="ico">🔍</span><span>Ver o que falta e reavaliar</span></button>
+        <button class="btn" id="bulkApply"><span class="ico">✍️</span><span>Preparar candidaturas</span></button>
+        <button class="linkbtn" id="bulkClear">Limpar seleção</button>
+      </div>
+
       <div style="overflow-x:auto">
         <table>
-          <thead><tr><th>Vaga</th><th class="num">Nota</th></tr></thead>
-          <tbody id="jobs"><tr><td colspan="2" style="color:var(--ink-2)">Carregando…</td></tr></tbody>
+          <thead><tr><th class="selcol"><input type="checkbox" id="selAll" title="Selecionar todas as visíveis"></th><th>Vaga</th><th class="num">Nota</th></tr></thead>
+          <tbody id="jobs"><tr><td colspan="3" style="color:var(--ink-2)">Carregando…</td></tr></tbody>
         </table>
       </div>
+    </div>
+  </div>
+
+  <!-- Meu currículo (por vaga): ver, baixar e editar -->
+  <div class="panel cvpanel">
+    <h2>Meu currículo (por vaga)</h2>
+    <p class="sub">Veja como ficou o currículo que o sistema montou para cada vaga, baixe em PDF ou edite o texto e recompile.</p>
+    <div class="cvhead">
+      <label for="cvSel" class="cvlbl">Currículo:</label>
+      <select id="cvSel"><option value="">— nenhum currículo gerado ainda —</option></select>
+      <button class="btn" id="cvView" style="width:auto" disabled><span class="ico">👁️</span><span>Ver PDF</span></button>
+      <button class="btn" id="cvDlPdf" style="width:auto" disabled><span class="ico">⬇️</span><span>Baixar PDF</span></button>
+      <button class="btn" id="cvEdit" style="width:auto" disabled><span class="ico">✏️</span><span>Editar texto</span></button>
+    </div>
+    <div class="cveditor" id="cvEditor" hidden>
+      <p class="cvedhint">Este é o código do currículo (LaTeX). Edite com cuidado e clique em <b>Salvar e recompilar</b>.
+        Se algo quebrar, o erro aparece abaixo e o PDF anterior continua salvo.</p>
+      <textarea id="cvText" spellcheck="false" rows="18"></textarea>
+      <div class="cvedactions">
+        <button class="btn primary" id="cvSave" style="width:auto"><span class="ico">💾</span><span>Salvar e recompilar</span></button>
+        <button class="btn" id="cvDlTex" style="width:auto"><span class="ico">⬇️</span><span>Baixar .tex</span></button>
+        <span class="cvstate" id="cvState"></span>
+      </div>
+      <div class="mbusy" id="cvBusy" hidden><span class="spin"></span> <span>Compilando o PDF… (pode levar até 1 minuto)</span></div>
+      <pre class="cvlog" id="cvLog" hidden></pre>
     </div>
   </div>
 
@@ -405,6 +465,30 @@ tr.aplicada td:first-child{box-shadow:inset 3px 0 0 var(--good)}
     </div>
   </div>
 
+  <!-- Modal de análise/reavaliação em massa (várias vagas de uma vez) -->
+  <div class="overlay" id="bulkOverlay">
+    <div class="modal">
+      <button class="mclose" id="bulkClose" aria-label="Fechar">×</button>
+      <div class="modal-h">
+        <h3>O que falta para chegar a 100%</h3>
+        <div class="co" id="bulkCo">—</div>
+      </div>
+      <div class="modal-b">
+        <div class="mbusy" id="bulkBusy" hidden><span class="spin"></span> <span id="bulkBusyTxt">Analisando…</span></div>
+        <div id="bulkBody" hidden>
+          <p class="gapnote">Marque só o que você <b>realmente tem ou já fez</b>. O assistente inclui no seu currículo
+            e <b>reavalia todas as vagas selecionadas</b> de uma vez. Cada item mostra em quantas vagas ajuda.</p>
+          <div id="bulkGaps"></div>
+          <div id="bulkLacunas"></div>
+        </div>
+        <div class="mresult" id="bulkResult" hidden></div>
+        <div class="modal-actions">
+          <button class="btn primary" id="bulkAddReval"><span class="ico">✅</span><span>Adicionar ao currículo e reavaliar tudo</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="note">
     <b>Importante:</b> o assistente prepara tudo — encontra as vagas, avalia e escreve o currículo e a carta sob medida.
     O <b>envio final</b> de cada candidatura você confirma pessoalmente no site da empresa (os sites de vaga exigem isso).
@@ -422,6 +506,7 @@ let filtro = "reco";     // Recomendadas / Todas / Nota mínima
 let aplicadasUrls = [];
 let JOBS = [];
 let CURRENT = null;
+const SELEC = new Set();  // URLs das vagas selecionadas (checkbox) para ações em massa
 
 async function loadState(){
   try{
@@ -466,7 +551,11 @@ function card(n,label,urg){ return `<div class="card${urg?' urg':''}"><b>${n}</b
 function jobRow(j,i){
   const prazo = j.deadline ? ` <span class="tag prazo">fecha ${j.deadline.slice(8,10)}/${j.deadline.slice(5,7)}</span>` : "";
   const ok = j.aplicada ? ` <span class="tag ok">✓ já inscrito</span>` : "";
-  return `<tr class="jobrow ${j.aplicada?'aplicada':''}" data-idx="${i}"><td class="jobtitle"><span>${esc(j.title)}</span>
+  const url = (j.url||"").replace(/"/g,"&quot;");
+  const chk = SELEC.has(j.url) ? " checked" : "";
+  return `<tr class="jobrow ${j.aplicada?'aplicada':''}" data-idx="${i}">
+    <td class="selcol"><input type="checkbox" class="jobsel" value="${url}"${chk}></td>
+    <td class="jobtitle"><span>${esc(j.title)}</span>
     <small>${esc(j.company||"—")}${prazo}${ok}</small></td>
     <td class="num">${j.score!=null?j.score:"—"}</td></tr>`;
 }
@@ -487,7 +576,8 @@ function renderJobs(){
   $("#jobsSub").textContent = subs[filtro] + "  ("+rows.length+" vaga"+(rows.length===1?"":"s")+")";
   $("#jobs").innerHTML = rows.length
     ? rows.map(({j,i})=>jobRow(j,i)).join("")
-    : '<tr><td colspan="2" style="color:var(--ink-2)">Nenhuma vaga com esse filtro. Clique em “Buscar novas vagas” ou troque o filtro.</td></tr>';
+    : '<tr><td colspan="3" style="color:var(--ink-2)">Nenhuma vaga com esse filtro. Clique em “Buscar novas vagas” ou troque o filtro.</td></tr>';
+  atualizarBarraSelecao();
 }
 
 // Abre a tela de detalhes com a explicação da nota.
@@ -521,12 +611,18 @@ function openDetail(j){
 function closeDetail(){ $("#overlay").classList.remove("on"); }
 
 $("#jobs").addEventListener("click",(e)=>{
+  // Clique no checkbox de seleção não abre o detalhe.
+  if(e.target.classList.contains("jobsel")){
+    const url=e.target.value;
+    if(e.target.checked) SELEC.add(url); else SELEC.delete(url);
+    atualizarBarraSelecao(); return;
+  }
   const tr = e.target.closest(".jobrow"); if(!tr) return;
   openDetail(JOBS[+tr.dataset.idx]);
 });
 $("#mclose").addEventListener("click", closeDetail);
 $("#overlay").addEventListener("click",(e)=>{ if(e.target.id==="overlay") closeDetail(); });
-document.addEventListener("keydown",(e)=>{ if(e.key==="Escape"){ closeAnswers(); closeDetail(); } });
+document.addEventListener("keydown",(e)=>{ if(e.key==="Escape"){ closeBulk(); closeAnswers(); closeDetail(); } });
 
 $("#mSite").addEventListener("click",()=>{ if(CURRENT) window.open(CURRENT.url,"_blank","noopener"); });
 $("#mApply").addEventListener("click",()=>{
@@ -661,6 +757,140 @@ $("#mAddReval").addEventListener("click", async ()=>{
     loadState();
   }catch(e){ clearBusy(); $("#mResult").hidden=false; $("#mResult").innerHTML='<p style="color:var(--urgent);margin:0">Falha: '+esc(e.message)+'</p>'; }
 });
+// ================= Seleção em massa de vagas =================
+function jobsSelecionadas(){ return JOBS.filter(j=>SELEC.has(j.url)).map(j=>({url:j.url,title:j.title,company:j.company})); }
+function atualizarBarraSelecao(){
+  const n=SELEC.size;
+  const bar=$("#bulkbar"); bar.hidden = n===0;
+  $("#bulkN").textContent = n+" selecionada"+(n===1?"":"s");
+  // estado do "selecionar todas" conforme o que está visível
+  const vis=[...document.querySelectorAll("#jobs .jobsel")];
+  const marc=vis.filter(c=>c.checked).length;
+  const all=$("#selAll");
+  all.checked = vis.length>0 && marc===vis.length;
+  all.indeterminate = marc>0 && marc<vis.length;
+}
+$("#selAll").addEventListener("change",(e)=>{
+  document.querySelectorAll("#jobs .jobsel").forEach(c=>{
+    c.checked=e.target.checked;
+    if(e.target.checked) SELEC.add(c.value); else SELEC.delete(c.value);
+  });
+  atualizarBarraSelecao();
+});
+$("#bulkClear").addEventListener("click",()=>{ SELEC.clear(); renderJobs(); });
+
+// ---- Ver o que falta e reavaliar (em massa) ----
+function closeBulk(){ $("#bulkOverlay").classList.remove("on"); }
+$("#bulkClose").addEventListener("click",closeBulk);
+$("#bulkOverlay").addEventListener("click",(e)=>{ if(e.target.id==="bulkOverlay") closeBulk(); });
+$("#bulkAnalyze").addEventListener("click", async ()=>{
+  const jobs=jobsSelecionadas(); if(!jobs.length) return;
+  $("#bulkCo").textContent = jobs.length+" vaga"+(jobs.length===1?"":"s")+" selecionada"+(jobs.length===1?"":"s");
+  $("#bulkBody").hidden=true; $("#bulkResult").hidden=true; $("#bulkAddReval").style.display="none";
+  $("#bulkBusy").hidden=false; $("#bulkBusyTxt").textContent="Analisando as vagas selecionadas… (pode levar 1 a 3 minutos)";
+  $("#bulkOverlay").classList.add("on");
+  try{
+    const r=await fetch("/api/bulk-analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({jobs})});
+    const a=await r.json(); $("#bulkBusy").hidden=true;
+    if(a.erro){ $("#bulkBody").hidden=false; $("#bulkGaps").innerHTML='<p style="color:var(--urgent)">Não consegui analisar: '+esc(a.erro)+'</p>'; return; }
+    const add=a.adicionaveis||[], lac=a.lacunas||[];
+    $("#bulkGaps").innerHTML = add.length
+      ? add.map(x=>{
+          const n=(x.vagas||[]).length;
+          const badge=n?'<span class="bulkvagas">ajuda em '+n+' vaga'+(n===1?"":"s")+'</span>':'';
+          const v=esc(x.item)+(x.sugestao?" — "+esc(x.sugestao):"");
+          return '<label class="gapcheck"><input type="checkbox" value="'+esc(x.item).replace(/"/g,"&quot;")+'"><span>'+v+badge+'</span></label>';
+        }).join("")
+      : '<p style="color:var(--ink-2)">Nada a adicionar: seu currículo já cobre o que dá para cobrir nestas vagas.</p>';
+    $("#bulkLacunas").innerHTML = lac.length
+      ? '<p class="sub" style="margin:14px 0 6px">Lacunas reais (não dá para adicionar sem ter de verdade):</p>'
+        +lac.map(x=>'<div class="bulklacuna"><span class="x">✕</span><span>'+esc(x.item)+(x.explicacao?" — "+esc(x.explicacao):"")+'</span></div>').join("")
+      : "";
+    $("#bulkBody").hidden=false;
+    $("#bulkAddReval").style.display = add.length ? "" : "none";
+  }catch(e){ $("#bulkBusy").hidden=true; $("#bulkBody").hidden=false; $("#bulkGaps").innerHTML='<p style="color:var(--urgent)">Falha: '+esc(e.message)+'</p>'; }
+});
+$("#bulkAddReval").addEventListener("click", async ()=>{
+  const items=[...$("#bulkGaps").querySelectorAll("input:checked")].map(c=>c.value);
+  if(!items.length){ $("#bulkGaps").scrollIntoView({block:"center"}); return; }
+  const jobs=jobsSelecionadas();
+  $("#bulkBody").hidden=true; $("#bulkResult").hidden=true;
+  $("#bulkBusy").hidden=false; $("#bulkBusyTxt").textContent="Adicionando ao currículo e reavaliando "+jobs.length+" vaga(s)… (pode levar alguns minutos)";
+  try{
+    const r=await fetch("/api/bulk-adjust",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({items,jobs})});
+    const a=await r.json(); $("#bulkBusy").hidden=true; $("#bulkResult").hidden=false;
+    if(a.erro){ $("#bulkResult").innerHTML='<p style="color:var(--urgent)">Não consegui concluir: '+esc(a.erro)+'</p>'; return; }
+    const res=a.resultados||[];
+    const linhas=res.map(x=>{
+      const j=JOBS.find(j=>j.url===x.url);
+      const nome=j?esc(j.company||j.title||x.url):esc(x.url);
+      return '<div class="bulklacuna"><span style="font-weight:700;color:var(--good)">'+(x.notaAntes!=null?x.notaAntes:"—")+' → '+(x.notaDepois!=null?x.notaDepois:"—")+'</span><span>'+nome+'</span></div>';
+    }).join("");
+    $("#bulkResult").innerHTML='<p style="margin:0 0 8px">'+(a.resumo?esc(a.resumo):'Currículo atualizado e vagas reavaliadas.')+'</p>'+linhas+'<p style="margin-top:10px">✓ Currículo atualizado no sistema.</p>';
+    $("#bulkAddReval").style.display="none";
+    loadState();
+  }catch(e){ $("#bulkBusy").hidden=true; $("#bulkResult").hidden=false; $("#bulkResult").innerHTML='<p style="color:var(--urgent)">Falha: '+esc(e.message)+'</p>'; }
+});
+
+// ---- Preparar candidaturas em massa (reusa o console do Claude) ----
+$("#bulkApply").addEventListener("click",()=>{
+  const jobs=jobsSelecionadas(); if(!jobs.length) return;
+  const jaAplicadas=jobs.filter(j=>aplicadasUrls.includes(j.url)).length;
+  let aviso="Preparar os documentos de "+jobs.length+" vaga(s) selecionada(s)?\n\nO assistente vai gerar currículo e carta para cada uma — pode levar vários minutos.";
+  if(jaAplicadas) aviso+="\n\n⚠ "+jaAplicadas+" delas você já se candidatou.";
+  if(!confirm(aviso)) return;
+  const lista=jobs.map((j,i)=>(i+1)+". "+(j.title||"")+" — "+(j.company||"")+" — "+j.url).join("\n");
+  run("Prepare a candidatura (/apply) para CADA uma destas vagas, uma por uma. Para cada: avalie a adequação, "+
+      "gere o currículo e a carta direcionados em português, compile os PDFs e me diga onde ficaram salvos. "+
+      "Ao final, faça um resumo do que foi preparado.\n\nVagas:\n"+lista);
+});
+
+// ================= Meu currículo (por vaga) =================
+let CVS=[];
+async function loadCvs(){
+  try{
+    const d=await (await fetch("/api/cvs")).json();
+    CVS=d.cvs||[];
+    const sel=$("#cvSel"); const atual=sel.value;
+    sel.innerHTML = CVS.length
+      ? CVS.map(c=>'<option value="'+esc(c.id).replace(/"/g,"&quot;")+'">'+esc(c.label)+'</option>').join("")
+      : '<option value="">— nenhum currículo gerado ainda —</option>';
+    if(atual && CVS.some(c=>c.id===atual)) sel.value=atual;
+    cvAtualizarBotoes();
+  }catch(e){ /* silencioso */ }
+}
+function cvAtualizarBotoes(){
+  const id=$("#cvSel").value; const on=!!id;
+  ["#cvView","#cvDlPdf","#cvEdit"].forEach(s=>$(s).disabled=!on);
+  if(!on){ $("#cvEditor").hidden=true; }
+}
+function baixarArquivo(url){ const a=document.createElement("a"); a.href=url; a.download=""; document.body.appendChild(a); a.click(); a.remove(); }
+$("#cvSel").addEventListener("change",()=>{ $("#cvEditor").hidden=true; $("#cvLog").hidden=true; $("#cvState").textContent=""; cvAtualizarBotoes(); });
+$("#cvView").addEventListener("click",()=>{ const id=$("#cvSel").value; if(id) window.open("/api/cv/pdf?id="+encodeURIComponent(id),"_blank","noopener"); });
+$("#cvDlPdf").addEventListener("click",()=>{ const id=$("#cvSel").value; if(id) baixarArquivo("/api/cv/download?id="+encodeURIComponent(id)+"&fmt=pdf"); });
+$("#cvDlTex").addEventListener("click",()=>{ const id=$("#cvSel").value; if(id) baixarArquivo("/api/cv/download?id="+encodeURIComponent(id)+"&fmt=tex"); });
+$("#cvEdit").addEventListener("click", async ()=>{
+  const id=$("#cvSel").value; if(!id) return;
+  $("#cvState").textContent="Carregando…"; $("#cvLog").hidden=true;
+  try{
+    const d=await (await fetch("/api/cv?id="+encodeURIComponent(id))).json();
+    if(d.erro){ $("#cvState").textContent=""; alert("Não consegui abrir: "+d.erro); return; }
+    $("#cvText").value=d.content||""; $("#cvEditor").hidden=false; $("#cvState").textContent="";
+    $("#cvEditor").scrollIntoView({behavior:"smooth",block:"nearest"});
+  }catch(e){ $("#cvState").textContent="Falha: "+e.message; }
+});
+$("#cvSave").addEventListener("click", async ()=>{
+  const id=$("#cvSel").value; if(!id) return;
+  $("#cvBusy").hidden=false; $("#cvLog").hidden=true; $("#cvState").textContent=""; $("#cvSave").disabled=true;
+  try{
+    const r=await fetch("/api/cv",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id,content:$("#cvText").value})});
+    const d=await r.json(); $("#cvBusy").hidden=true; $("#cvSave").disabled=false;
+    if(d.erro){ $("#cvState").textContent=""; $("#cvLog").hidden=false; $("#cvLog").textContent=d.erro; return; }
+    if(d.compilado){ $("#cvState").textContent="✔ Salvo e PDF recompilado. Clique em “Ver PDF”."; $("#cvLog").hidden=true; loadCvs(); }
+    else{ $("#cvState").textContent="Salvo, mas a compilação falhou (o PDF anterior foi mantido):"; $("#cvLog").hidden=false; $("#cvLog").textContent=d.log||"erro de compilação"; }
+  }catch(e){ $("#cvBusy").hidden=true; $("#cvSave").disabled=false; $("#cvState").textContent="Falha ao salvar: "+e.message; }
+});
+
 function esc(s){return (s||"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
 
 let runEv=null;
@@ -842,7 +1072,8 @@ $("#applyBtn").addEventListener("click",()=>{
 $("#closeC").addEventListener("click",()=>$("#console").classList.remove("on"));
 
 loadState();
-setInterval(()=>{ if(!running) loadState(); }, 15000);
+loadCvs();
+setInterval(()=>{ if(!running){ loadState(); loadCvs(); } }, 15000);
 </script>
 </body>
 </html>

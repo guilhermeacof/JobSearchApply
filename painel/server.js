@@ -322,6 +322,81 @@ function extractJson(text) {
   try { return JSON.parse(cand); } catch { return null; }
 }
 
+// ---------- Currículos gerados por vaga (ver / baixar / editar / recompilar) ----------
+
+const APPS_DIR = path.join(WORKSPACE, "documents", "applications");
+
+// lualatex do MiKTeX — detectado dinamicamente, sem caminho fixo de máquina.
+const LUALATEX_BIN = process.env.LUALATEX_BIN || (() => {
+  const guess = path.join(os.homedir(), "AppData", "Local", "Programs", "MiKTeX", "miktex", "bin", "x64", "lualatex.exe");
+  return process.platform === "win32" && fs.existsSync(guess) ? guess : "lualatex";
+})();
+
+// Resolve a pasta de uma aplicação a partir do id (nome da pasta), barrando path traversal.
+function appDir(id) {
+  const safe = path.basename(String(id || ""));
+  const dir = path.join(APPS_DIR, safe);
+  if (!safe || !dir.startsWith(APPS_DIR) || !fs.existsSync(dir)) return null;
+  return dir;
+}
+
+// Escolhe o PDF do currículo dentro da pasta. Prioriza o cv_draft.pdf (recompilado a
+// partir do .tex editável) quando existir — assim, após editar e salvar, o "Ver PDF"
+// mostra a versão nova. Senão, cai no PDF de entrega original ("Currículo …" / main_*).
+function findCvPdf(dir) {
+  let files = [];
+  try { files = fs.readdirSync(dir).filter((f) => f.toLowerCase().endsWith(".pdf")); } catch {}
+  return files.find((f) => /^cv_draft\.pdf$/i.test(f))
+    || files.find((f) => /curr[ií]culo/i.test(f))
+    || files.find((f) => /^main_.*\.pdf$/i.test(f))
+    || null;
+}
+
+// Rótulo amigável da vaga: usa o "# Outcome: …" do outcome.md, senão o nome da pasta.
+function appLabel(dir, id) {
+  try {
+    const oc = fs.readFileSync(path.join(dir, "outcome.md"), "utf8");
+    const m = oc.match(/^#\s*Outcome:\s*(.+)$/m);
+    if (m) return m[1].trim();
+  } catch {}
+  return String(id).replace(/_/g, " ");
+}
+
+// Lista as aplicações que têm currículo (cv_draft.tex).
+function listApplications() {
+  let out = [];
+  try {
+    for (const id of fs.readdirSync(APPS_DIR)) {
+      const dir = path.join(APPS_DIR, id);
+      if (!fs.statSync(dir).isDirectory()) continue;
+      const temTex = fs.existsSync(path.join(dir, "cv_draft.tex"));
+      if (!temTex) continue;
+      out.push({ id, label: appLabel(dir, id), temPdf: !!findCvPdf(dir) });
+    }
+  } catch {}
+  return out;
+}
+
+// Recompila cv_draft.tex → cv_draft.pdf (2 passadas, como manda o CLAUDE.md). cb(ok, log).
+function compileCv(dir, cb) {
+  const tex = "cv_draft.tex";
+  if (!fs.existsSync(path.join(dir, tex))) return cb(false, "cv_draft.tex não encontrado.");
+  const args = ["-interaction=nonstopmode", "-halt-on-error", tex];
+  let log = "", killed = false;
+  const passada = (n, next) => {
+    const p = spawn(LUALATEX_BIN, args, { cwd: dir, shell: process.platform === "win32", windowsHide: true });
+    const t = setTimeout(() => { killed = true; try { p.kill(); } catch {} }, 120000);
+    p.stdout.on("data", (b) => (log += b.toString()));
+    p.stderr.on("data", (b) => (log += b.toString()));
+    p.on("error", (e) => { clearTimeout(t); cb(false, "Falha ao rodar o lualatex: " + e.message); });
+    p.on("close", () => { clearTimeout(t); if (killed) return cb(false, "A compilação demorou demais e foi cancelada.\n\n" + log.slice(-1500)); next(); });
+  };
+  passada(1, () => passada(2, () => {
+    const ok = fs.existsSync(path.join(dir, "cv_draft.pdf"));
+    cb(ok, ok ? "" : ("Não gerou o PDF. Fim do log:\n\n" + log.slice(-1800)));
+  }));
+}
+
 // ---------- Busca com progresso real (roda as CLIs direto, cancelável) ----------
 
 function heurFit(title) {
@@ -610,6 +685,130 @@ const server = http.createServer((req, res) => {
       }
     });
     return;
+  }
+
+  // ----- Análise/reavaliação EM MASSA (várias vagas de uma vez) -----
+  // Analisa as vagas selecionadas e devolve, agregados, os itens que provavelmente
+  // faltam no CV e que dá para adicionar (a confirmar) — uma só chamada ao Claude.
+  if (u.pathname === "/api/bulk-analyze" && req.method === "POST") {
+    const chunks = [];
+    req.on("data", (c) => chunks.push(c));
+    req.on("end", () => {
+      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      let body = {};
+      try { body = JSON.parse(Buffer.concat(chunks).toString() || "{}"); } catch {}
+      const jobs = (body.jobs || []).slice(0, 20);
+      if (!jobs.length) return res.end(JSON.stringify({ erro: "nenhuma vaga selecionada" }));
+      const lista = jobs.map((j, i) => (i + 1) + ". " + (j.title || "") + " — " + (j.company || "") + " — " + j.url).join("\n");
+      const prompt =
+        'Compare estas vagas com o meu perfil e currículo atuais (leia CLAUDE.md e ' +
+        '.claude/skills/job-application-assistant/01-candidate-profile.md). Vagas:\n' + lista + '\n\n' +
+        'Liste de forma AGREGADA os itens que eu PROVAVELMENTE TENHO e que só faltam no meu currículo ' +
+        '(adicionáveis, a confirmar comigo) e que aumentariam a nota em uma ou mais dessas vagas. ' +
+        'NÃO invente nada; itens que eu genuinamente não tenho vão em "lacunas". ' +
+        'Responda ESTRITAMENTE com UM bloco JSON, sem texto fora dele:\n' +
+        '{"adicionaveis":[{"item":"<curto>","sugestao":"<o que escrever no CV>","vagas":[<números 1..N que isso ajuda>]}],' +
+        '"lacunas":[{"item":"<curto>","explicacao":"<por que não dá para adicionar>"}]}\nTextos em português.';
+      runClaudeCollect(prompt, (out, err) => {
+        if (err) return res.end(JSON.stringify({ erro: err }));
+        const j = extractJson(out);
+        if (!j) return res.end(JSON.stringify({ erro: "não consegui interpretar a análise" }));
+        res.end(JSON.stringify(j));
+      });
+    });
+    return;
+  }
+
+  // Adiciona os itens confirmados ao CV/perfil e reavalia TODAS as vagas selecionadas.
+  if (u.pathname === "/api/bulk-adjust" && req.method === "POST") {
+    const chunks = [];
+    req.on("data", (c) => chunks.push(c));
+    req.on("end", () => {
+      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      let body = {};
+      try { body = JSON.parse(Buffer.concat(chunks).toString() || "{}"); } catch {}
+      const items = (body.items || []).map(String).filter(Boolean);
+      const jobs = (body.jobs || []).slice(0, 20);
+      if (!items.length) return res.end(JSON.stringify({ erro: "nenhum item selecionado" }));
+      if (!jobs.length) return res.end(JSON.stringify({ erro: "nenhuma vaga selecionada" }));
+      const lista = jobs.map((j, i) => (i + 1) + ". " + (j.title || "") + " — " + (j.company || "") + " — " + j.url).join("\n");
+      const prompt =
+        'Eu confirmo que TENHO de verdade estes itens (marquei no painel), que faltavam no meu currículo:\n- ' +
+        items.join("\n- ") + '\n\n' +
+        'Adicione-os ao meu perfil (CLAUDE.md e .claude/skills/job-application-assistant/01-candidate-profile.md) e ao ' +
+        'cv/main_example.tex de forma verdadeira e natural — SOMENTE o que confirmei, sem inventar nada além. ' +
+        'Depois reavalie a minha adequação a CADA uma destas vagas e atualize a nota (rank_score) no ' +
+        'job_scraper/seen_jobs.json:\n' + lista + '\n\n' +
+        'Responda ESTRITAMENTE com UM bloco JSON, sem texto fora dele: ' +
+        '{"resultados":[{"url":"<url>","notaAntes":<n>,"notaDepois":<n>}],"resumo":"<uma frase do que mudou>"}.';
+      runClaudeCollect(prompt, (out, err) => {
+        if (err) return res.end(JSON.stringify({ erro: err }));
+        const j = extractJson(out);
+        if (!j) return res.end(JSON.stringify({ erro: "não consegui confirmar o resultado" }));
+        res.end(JSON.stringify(j));
+      });
+    });
+    return;
+  }
+
+  // ----- Currículos gerados por vaga: listar / ver / baixar / editar / recompilar -----
+  if (u.pathname === "/api/cvs" && req.method === "GET") {
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    return res.end(JSON.stringify({ cvs: listApplications() }));
+  }
+  // Conteúdo do .tex para edição.
+  if (u.pathname === "/api/cv" && req.method === "GET") {
+    const dir = appDir(u.searchParams.get("id"));
+    res.writeHead(dir ? 200 : 404, { "Content-Type": "application/json; charset=utf-8" });
+    if (!dir) return res.end(JSON.stringify({ erro: "currículo não encontrado" }));
+    try { return res.end(JSON.stringify({ content: fs.readFileSync(path.join(dir, "cv_draft.tex"), "utf8") })); }
+    catch (e) { return res.end(JSON.stringify({ erro: e.message })); }
+  }
+  // Salvar o .tex editado e recompilar.
+  if (u.pathname === "/api/cv" && req.method === "POST") {
+    const chunks = [];
+    req.on("data", (c) => chunks.push(c));
+    req.on("end", () => {
+      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      let body = {};
+      try { body = JSON.parse(Buffer.concat(chunks).toString() || "{}"); } catch {}
+      const dir = appDir(body.id);
+      if (!dir) return res.end(JSON.stringify({ erro: "currículo não encontrado" }));
+      if (typeof body.content !== "string" || !body.content.trim())
+        return res.end(JSON.stringify({ erro: "conteúdo vazio" }));
+      try { fs.writeFileSync(path.join(dir, "cv_draft.tex"), body.content, "utf8"); }
+      catch (e) { return res.end(JSON.stringify({ erro: "falha ao salvar: " + e.message })); }
+      compileCv(dir, (ok, log) => res.end(JSON.stringify({ ok: true, compilado: ok, log: ok ? "" : log })));
+    });
+    return;
+  }
+  // Servir o PDF (inline para ver, ou anexo para baixar). Recompila se ainda não houver PDF.
+  if ((u.pathname === "/api/cv/pdf" || u.pathname === "/api/cv/download") && req.method === "GET") {
+    const dir = appDir(u.searchParams.get("id"));
+    if (!dir) { res.writeHead(404); return res.end("não encontrado"); }
+    const fmt = u.searchParams.get("fmt") || "pdf";
+    const baixar = u.pathname === "/api/cv/download";
+    const nomeBase = "Currículo - Guilherme Augusto S. F. C. Oliveira";
+    // Cabeçalho HTTP precisa ser ASCII: fallback sem acento + filename* (UTF-8, RFC 5987).
+    const disp = (ext) => {
+      const ascii = nomeBase.normalize("NFD").replace(/[̀-ͯ]/g, "") + "." + ext;
+      return (baixar ? "attachment" : "inline") +
+        '; filename="' + ascii + '"; filename*=UTF-8\'\'' + encodeURIComponent(nomeBase + "." + ext);
+    };
+    if (fmt === "tex") {
+      const p = path.join(dir, "cv_draft.tex");
+      if (!fs.existsSync(p)) { res.writeHead(404); return res.end("sem .tex"); }
+      res.writeHead(200, { "Content-Type": "application/x-tex; charset=utf-8", "Content-Disposition": disp("tex") });
+      return res.end(fs.readFileSync(p));
+    }
+    const servePdf = () => {
+      const pdf = findCvPdf(dir);
+      if (!pdf) { res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" }); return res.end("PDF ainda não gerado. Edite e salve para compilar."); }
+      res.writeHead(200, { "Content-Type": "application/pdf", "Content-Disposition": disp("pdf") });
+      fs.createReadStream(path.join(dir, pdf)).pipe(res);
+    };
+    if (findCvPdf(dir)) return servePdf();
+    return compileCv(dir, () => servePdf()); // sem PDF ainda → tenta compilar antes de servir
   }
 
   // Upload do currículo → salva em documents/cv/ (pasta privada, gitignored).

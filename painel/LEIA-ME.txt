@@ -15,6 +15,21 @@ O painel NÃO envia nada sozinho: ele encontra as vagas,
 avalia e escreve o currículo e a carta. O clique final de
 "enviar" no site da empresa é sempre seu.
 
+DICA - Fazer várias vagas de uma vez:
+Cada vaga na lista tem uma caixinha (checkbox). Marque as que
+quiser (ou use "selecionar todas" no topo da lista) e aparece
+uma barra com duas opções:
+ - "Ver o que falta e reavaliar": mostra o que dá para acrescentar
+   ao seu currículo e reavalia TODAS as marcadas de uma vez.
+ - "Preparar candidaturas": monta currículo e carta de todas as
+   marcadas, uma após a outra.
+
+DICA - Ver/editar seu currículo:
+Na seção "Meu currículo (por vaga)" você escolhe um currículo
+já gerado e pode: Ver PDF, Baixar PDF, ou Editar texto (mexer
+no conteúdo e clicar em "Salvar e recompilar" para gerar o PDF
+novo). Se algo der errado na edição, o PDF anterior é mantido.
+
 DICA - Respostas do formulário (pretensão, etc.):
 Quando o site (Gupy) pedir campos como "Pretensão salarial",
 "Última remuneração" ou perguntas específicas da vaga, use:
