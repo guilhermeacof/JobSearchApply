@@ -343,16 +343,15 @@ tr.aplicada td:first-child{box-shadow:inset 3px 0 0 var(--good)}
     </div>
   </div>
 
-  <!-- Meu currículo (por vaga): ver, baixar e editar -->
+  <!-- Meu currículo (único): ver, baixar e editar -->
   <div class="panel cvpanel">
-    <h2>Meu currículo (por vaga)</h2>
-    <p class="sub">Veja como ficou o currículo que o sistema montou para cada vaga, baixe em PDF ou edite o texto e recompile.</p>
+    <h2>Meu currículo</h2>
+    <p class="sub">É um currículo só, que vai <b>crescendo</b> conforme você confirma o que tem (nas telas de vaga).
+      É este mesmo que é usado nas candidaturas — o sistema <b>não gera um novo a cada vaga</b>.</p>
     <div class="cvhead">
-      <label for="cvSel" class="cvlbl">Currículo:</label>
-      <select id="cvSel"><option value="">— nenhum currículo gerado ainda —</option></select>
-      <button class="btn" id="cvView" style="width:auto" disabled><span class="ico">👁️</span><span>Ver PDF</span></button>
-      <button class="btn" id="cvDlPdf" style="width:auto" disabled><span class="ico">⬇️</span><span>Baixar PDF</span></button>
-      <button class="btn" id="cvEdit" style="width:auto" disabled><span class="ico">✏️</span><span>Editar texto</span></button>
+      <button class="btn" id="cvView" style="width:auto"><span class="ico">👁️</span><span>Ver PDF</span></button>
+      <button class="btn" id="cvDlPdf" style="width:auto"><span class="ico">⬇️</span><span>Baixar PDF</span></button>
+      <button class="btn" id="cvEdit" style="width:auto"><span class="ico">✏️</span><span>Editar texto</span></button>
     </div>
     <div class="cveditor" id="cvEditor" hidden>
       <p class="cvedhint">Este é o código do currículo (LaTeX). Edite com cuidado e clique em <b>Salvar e recompilar</b>.
@@ -625,12 +624,20 @@ $("#overlay").addEventListener("click",(e)=>{ if(e.target.id==="overlay") closeD
 document.addEventListener("keydown",(e)=>{ if(e.key==="Escape"){ closeBulk(); closeAnswers(); closeDetail(); } });
 
 $("#mSite").addEventListener("click",()=>{ if(CURRENT) window.open(CURRENT.url,"_blank","noopener"); });
+// Prompt de candidatura para UMA vaga — usa o currículo único, sem gerar um novo.
+function promptApply(url){
+  return "Prepare a candidatura para esta vaga: "+url+". "+
+    "IMPORTANTE: use o MEU CURRÍCULO ÚNICO (cv/main_example.tex) exatamente como está — "+
+    "NÃO gere um currículo novo/direcionado para a vaga nem altere o meu currículo. "+
+    "Escreva SOMENTE uma carta de apresentação curta e específica desta empresa/vaga, em português, e compile o PDF dela. "+
+    "Garanta o PDF do currículo único compilado (cv/main_example.pdf). Copie o currículo único e a carta para a pasta da "+
+    "candidatura, registre no tracker e me diga onde os arquivos ficaram. Avalie a adequação em uma linha, sem mexer no currículo.";
+}
 $("#mApply").addEventListener("click",()=>{
   if(!CURRENT) return;
   if(CURRENT.aplicada && !confirm("⚠ Você JÁ se candidatou a esta vaga.\n\nPreparar os documentos mesmo assim?")) return;
   const url = CURRENT.url; closeDetail();
-  run("Execute o fluxo de candidatura (/apply) para esta vaga: "+url+
-      " . Avalie a adequação, gere o currículo e a carta direcionados em português, compile os PDFs e me diga onde os arquivos ficaram salvos.");
+  run(promptApply(url));
 });
 // ---------- Respostas do formulário (campos da Gupy etc.) ----------
 let ANS_JOB=null; // vaga atual do modal de respostas (null = editando os valores padrão)
@@ -836,57 +843,37 @@ $("#bulkAddReval").addEventListener("click", async ()=>{
 $("#bulkApply").addEventListener("click",()=>{
   const jobs=jobsSelecionadas(); if(!jobs.length) return;
   const jaAplicadas=jobs.filter(j=>aplicadasUrls.includes(j.url)).length;
-  let aviso="Preparar os documentos de "+jobs.length+" vaga(s) selecionada(s)?\n\nO assistente vai gerar currículo e carta para cada uma — pode levar vários minutos.";
+  let aviso="Preparar os documentos de "+jobs.length+" vaga(s) selecionada(s)?\n\nUsa o seu currículo único e escreve uma carta para cada — pode levar vários minutos.";
   if(jaAplicadas) aviso+="\n\n⚠ "+jaAplicadas+" delas você já se candidatou.";
   if(!confirm(aviso)) return;
   const lista=jobs.map((j,i)=>(i+1)+". "+(j.title||"")+" — "+(j.company||"")+" — "+j.url).join("\n");
-  run("Prepare a candidatura (/apply) para CADA uma destas vagas, uma por uma. Para cada: avalie a adequação, "+
-      "gere o currículo e a carta direcionados em português, compile os PDFs e me diga onde ficaram salvos. "+
-      "Ao final, faça um resumo do que foi preparado.\n\nVagas:\n"+lista);
+  run("Prepare a candidatura para CADA uma destas vagas, uma por uma. Para TODAS use o MEU CURRÍCULO ÚNICO "+
+      "(cv/main_example.tex) exatamente como está — NÃO gere currículos novos/direcionados nem altere o currículo. "+
+      "Para cada vaga escreva apenas uma carta de apresentação curta e específica da empresa, compile o PDF, copie o "+
+      "currículo único + a carta para a pasta da candidatura e registre no tracker. Ao final, resuma o que foi preparado.\n\nVagas:\n"+lista);
 });
 
-// ================= Meu currículo (por vaga) =================
-let CVS=[];
-async function loadCvs(){
-  try{
-    const d=await (await fetch("/api/cvs")).json();
-    CVS=d.cvs||[];
-    const sel=$("#cvSel"); const atual=sel.value;
-    sel.innerHTML = CVS.length
-      ? CVS.map(c=>'<option value="'+esc(c.id).replace(/"/g,"&quot;")+'">'+esc(c.label)+'</option>').join("")
-      : '<option value="">— nenhum currículo gerado ainda —</option>';
-    if(atual && CVS.some(c=>c.id===atual)) sel.value=atual;
-    cvAtualizarBotoes();
-  }catch(e){ /* silencioso */ }
-}
-function cvAtualizarBotoes(){
-  const id=$("#cvSel").value; const on=!!id;
-  ["#cvView","#cvDlPdf","#cvEdit"].forEach(s=>$(s).disabled=!on);
-  if(!on){ $("#cvEditor").hidden=true; }
-}
+// ================= Meu currículo (único) =================
 function baixarArquivo(url){ const a=document.createElement("a"); a.href=url; a.download=""; document.body.appendChild(a); a.click(); a.remove(); }
-$("#cvSel").addEventListener("change",()=>{ $("#cvEditor").hidden=true; $("#cvLog").hidden=true; $("#cvState").textContent=""; cvAtualizarBotoes(); });
-$("#cvView").addEventListener("click",()=>{ const id=$("#cvSel").value; if(id) window.open("/api/cv/pdf?id="+encodeURIComponent(id),"_blank","noopener"); });
-$("#cvDlPdf").addEventListener("click",()=>{ const id=$("#cvSel").value; if(id) baixarArquivo("/api/cv/download?id="+encodeURIComponent(id)+"&fmt=pdf"); });
-$("#cvDlTex").addEventListener("click",()=>{ const id=$("#cvSel").value; if(id) baixarArquivo("/api/cv/download?id="+encodeURIComponent(id)+"&fmt=tex"); });
+$("#cvView").addEventListener("click",()=>window.open("/api/mycv/pdf","_blank","noopener"));
+$("#cvDlPdf").addEventListener("click",()=>baixarArquivo("/api/mycv/download?fmt=pdf"));
+$("#cvDlTex").addEventListener("click",()=>baixarArquivo("/api/mycv/download?fmt=tex"));
 $("#cvEdit").addEventListener("click", async ()=>{
-  const id=$("#cvSel").value; if(!id) return;
   $("#cvState").textContent="Carregando…"; $("#cvLog").hidden=true;
   try{
-    const d=await (await fetch("/api/cv?id="+encodeURIComponent(id))).json();
+    const d=await (await fetch("/api/mycv")).json();
     if(d.erro){ $("#cvState").textContent=""; alert("Não consegui abrir: "+d.erro); return; }
     $("#cvText").value=d.content||""; $("#cvEditor").hidden=false; $("#cvState").textContent="";
     $("#cvEditor").scrollIntoView({behavior:"smooth",block:"nearest"});
   }catch(e){ $("#cvState").textContent="Falha: "+e.message; }
 });
 $("#cvSave").addEventListener("click", async ()=>{
-  const id=$("#cvSel").value; if(!id) return;
   $("#cvBusy").hidden=false; $("#cvLog").hidden=true; $("#cvState").textContent=""; $("#cvSave").disabled=true;
   try{
-    const r=await fetch("/api/cv",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id,content:$("#cvText").value})});
+    const r=await fetch("/api/mycv",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({content:$("#cvText").value})});
     const d=await r.json(); $("#cvBusy").hidden=true; $("#cvSave").disabled=false;
     if(d.erro){ $("#cvState").textContent=""; $("#cvLog").hidden=false; $("#cvLog").textContent=d.erro; return; }
-    if(d.compilado){ $("#cvState").textContent="✔ Salvo e PDF recompilado. Clique em “Ver PDF”."; $("#cvLog").hidden=true; loadCvs(); }
+    if(d.compilado){ $("#cvState").textContent="✔ Salvo e PDF recompilado. Clique em “Ver PDF”."; $("#cvLog").hidden=true; }
     else{ $("#cvState").textContent="Salvo, mas a compilação falhou (o PDF anterior foi mantido):"; $("#cvLog").hidden=false; $("#cvLog").textContent=d.log||"erro de compilação"; }
   }catch(e){ $("#cvBusy").hidden=true; $("#cvSave").disabled=false; $("#cvState").textContent="Falha ao salvar: "+e.message; }
 });
@@ -1066,14 +1053,12 @@ $("#applyBtn").addEventListener("click",()=>{
   if(aplicadasUrls.some(u=>u && (u===link || u.split("?")[0]===link.split("?")[0]))){
     if(!confirm("⚠ Você JÁ se candidatou a esta vaga.\n\nQuer preparar os documentos mesmo assim?")) return;
   }
-  run("Execute o fluxo de candidatura (/apply) para esta vaga: "+link+
-      " . Avalie a adequação, gere o currículo e a carta direcionados em português, compile os PDFs e me diga onde os arquivos ficaram salvos.");
+  run(promptApply(link));
 });
 $("#closeC").addEventListener("click",()=>$("#console").classList.remove("on"));
 
 loadState();
-loadCvs();
-setInterval(()=>{ if(!running){ loadState(); loadCvs(); } }, 15000);
+setInterval(()=>{ if(!running) loadState(); }, 15000);
 </script>
 </body>
 </html>

@@ -25,10 +25,12 @@ uma barra com duas opções:
    marcadas, uma após a outra.
 
 DICA - Ver/editar seu currículo:
-Na seção "Meu currículo (por vaga)" você escolhe um currículo
-já gerado e pode: Ver PDF, Baixar PDF, ou Editar texto (mexer
-no conteúdo e clicar em "Salvar e recompilar" para gerar o PDF
-novo). Se algo der errado na edição, o PDF anterior é mantido.
+Você tem UM currículo só, que vai crescendo conforme confirma
+o que tem. Na seção "Meu currículo" dá para: Ver PDF, Baixar
+PDF, ou Editar texto (mexer no conteúdo e clicar em "Salvar e
+recompilar"). É esse mesmo currículo que é usado nas
+candidaturas - o sistema NÃO cria um novo a cada vaga.
+Se algo der errado na edição, o PDF anterior é mantido.
 
 DICA - Respostas do formulário (pretensão, etc.):
 Quando o site (Gupy) pedir campos como "Pretensão salarial",

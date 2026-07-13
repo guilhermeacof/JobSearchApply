@@ -322,9 +322,13 @@ function extractJson(text) {
   try { return JSON.parse(cand); } catch { return null; }
 }
 
-// ---------- Currículos gerados por vaga (ver / baixar / editar / recompilar) ----------
-
-const APPS_DIR = path.join(WORKSPACE, "documents", "applications");
+// ---------- Meu currículo ÚNICO (ver / baixar / editar / recompilar) ----------
+// O usuário mantém UM currículo só (o mestre cv/main_example.tex), que vai sendo
+// enriquecido conforme confirma o que tem. Nada é gerado por vaga: candidatar-se usa
+// este mesmo arquivo. Economiza tempo e mantém um documento único e coerente.
+const CV_DIR = path.join(WORKSPACE, "cv");
+const CV_TEX = "main_example.tex";
+const CV_PDF = "main_example.pdf";
 
 // lualatex do MiKTeX — detectado dinamicamente, sem caminho fixo de máquina.
 const LUALATEX_BIN = process.env.LUALATEX_BIN || (() => {
@@ -332,56 +336,11 @@ const LUALATEX_BIN = process.env.LUALATEX_BIN || (() => {
   return process.platform === "win32" && fs.existsSync(guess) ? guess : "lualatex";
 })();
 
-// Resolve a pasta de uma aplicação a partir do id (nome da pasta), barrando path traversal.
-function appDir(id) {
-  const safe = path.basename(String(id || ""));
-  const dir = path.join(APPS_DIR, safe);
-  if (!safe || !dir.startsWith(APPS_DIR) || !fs.existsSync(dir)) return null;
-  return dir;
-}
-
-// Escolhe o PDF do currículo dentro da pasta. Prioriza o cv_draft.pdf (recompilado a
-// partir do .tex editável) quando existir — assim, após editar e salvar, o "Ver PDF"
-// mostra a versão nova. Senão, cai no PDF de entrega original ("Currículo …" / main_*).
-function findCvPdf(dir) {
-  let files = [];
-  try { files = fs.readdirSync(dir).filter((f) => f.toLowerCase().endsWith(".pdf")); } catch {}
-  return files.find((f) => /^cv_draft\.pdf$/i.test(f))
-    || files.find((f) => /curr[ií]culo/i.test(f))
-    || files.find((f) => /^main_.*\.pdf$/i.test(f))
-    || null;
-}
-
-// Rótulo amigável da vaga: usa o "# Outcome: …" do outcome.md, senão o nome da pasta.
-function appLabel(dir, id) {
-  try {
-    const oc = fs.readFileSync(path.join(dir, "outcome.md"), "utf8");
-    const m = oc.match(/^#\s*Outcome:\s*(.+)$/m);
-    if (m) return m[1].trim();
-  } catch {}
-  return String(id).replace(/_/g, " ");
-}
-
-// Lista as aplicações que têm currículo (cv_draft.tex).
-function listApplications() {
-  let out = [];
-  try {
-    for (const id of fs.readdirSync(APPS_DIR)) {
-      const dir = path.join(APPS_DIR, id);
-      if (!fs.statSync(dir).isDirectory()) continue;
-      const temTex = fs.existsSync(path.join(dir, "cv_draft.tex"));
-      if (!temTex) continue;
-      out.push({ id, label: appLabel(dir, id), temPdf: !!findCvPdf(dir) });
-    }
-  } catch {}
-  return out;
-}
-
-// Recompila cv_draft.tex → cv_draft.pdf (2 passadas, como manda o CLAUDE.md). cb(ok, log).
-function compileCv(dir, cb) {
-  const tex = "cv_draft.tex";
-  if (!fs.existsSync(path.join(dir, tex))) return cb(false, "cv_draft.tex não encontrado.");
-  const args = ["-interaction=nonstopmode", "-halt-on-error", tex];
+// Compila um .tex (2 passadas, como manda o CLAUDE.md). cb(ok, log).
+function compileTex(dir, texFile, cb) {
+  if (!fs.existsSync(path.join(dir, texFile))) return cb(false, texFile + " não encontrado.");
+  const args = ["-interaction=nonstopmode", "-halt-on-error", texFile];
+  const pdf = texFile.replace(/\.tex$/i, ".pdf");
   let log = "", killed = false;
   const passada = (n, next) => {
     const p = spawn(LUALATEX_BIN, args, { cwd: dir, shell: process.platform === "win32", windowsHide: true });
@@ -392,9 +351,16 @@ function compileCv(dir, cb) {
     p.on("close", () => { clearTimeout(t); if (killed) return cb(false, "A compilação demorou demais e foi cancelada.\n\n" + log.slice(-1500)); next(); });
   };
   passada(1, () => passada(2, () => {
-    const ok = fs.existsSync(path.join(dir, "cv_draft.pdf"));
+    const ok = fs.existsSync(path.join(dir, pdf));
     cb(ok, ok ? "" : ("Não gerou o PDF. Fim do log:\n\n" + log.slice(-1800)));
   }));
+}
+
+// O PDF do currículo está desatualizado? (não existe, ou o .tex é mais novo que o .pdf)
+function cvPdfDesatualizado() {
+  const tex = path.join(CV_DIR, CV_TEX), pdf = path.join(CV_DIR, CV_PDF);
+  if (!fs.existsSync(pdf)) return true;
+  try { return fs.existsSync(tex) && fs.statSync(tex).mtimeMs > fs.statSync(pdf).mtimeMs; } catch { return true; }
 }
 
 // ---------- Busca com progresso real (roda as CLIs direto, cancelável) ----------
@@ -751,43 +717,33 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // ----- Currículos gerados por vaga: listar / ver / baixar / editar / recompilar -----
-  if (u.pathname === "/api/cvs" && req.method === "GET") {
-    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
-    return res.end(JSON.stringify({ cvs: listApplications() }));
-  }
+  // ----- Meu currículo ÚNICO: ver / baixar / editar / recompilar -----
   // Conteúdo do .tex para edição.
-  if (u.pathname === "/api/cv" && req.method === "GET") {
-    const dir = appDir(u.searchParams.get("id"));
-    res.writeHead(dir ? 200 : 404, { "Content-Type": "application/json; charset=utf-8" });
-    if (!dir) return res.end(JSON.stringify({ erro: "currículo não encontrado" }));
-    try { return res.end(JSON.stringify({ content: fs.readFileSync(path.join(dir, "cv_draft.tex"), "utf8") })); }
-    catch (e) { return res.end(JSON.stringify({ erro: e.message })); }
+  if (u.pathname === "/api/mycv" && req.method === "GET") {
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    try { return res.end(JSON.stringify({ content: fs.readFileSync(path.join(CV_DIR, CV_TEX), "utf8") })); }
+    catch (e) { return res.end(JSON.stringify({ erro: "currículo não encontrado: " + e.message })); }
   }
   // Salvar o .tex editado e recompilar.
-  if (u.pathname === "/api/cv" && req.method === "POST") {
+  if (u.pathname === "/api/mycv" && req.method === "POST") {
     const chunks = [];
     req.on("data", (c) => chunks.push(c));
     req.on("end", () => {
       res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
       let body = {};
       try { body = JSON.parse(Buffer.concat(chunks).toString() || "{}"); } catch {}
-      const dir = appDir(body.id);
-      if (!dir) return res.end(JSON.stringify({ erro: "currículo não encontrado" }));
       if (typeof body.content !== "string" || !body.content.trim())
         return res.end(JSON.stringify({ erro: "conteúdo vazio" }));
-      try { fs.writeFileSync(path.join(dir, "cv_draft.tex"), body.content, "utf8"); }
+      try { fs.writeFileSync(path.join(CV_DIR, CV_TEX), body.content, "utf8"); }
       catch (e) { return res.end(JSON.stringify({ erro: "falha ao salvar: " + e.message })); }
-      compileCv(dir, (ok, log) => res.end(JSON.stringify({ ok: true, compilado: ok, log: ok ? "" : log })));
+      compileTex(CV_DIR, CV_TEX, (ok, log) => res.end(JSON.stringify({ ok: true, compilado: ok, log: ok ? "" : log })));
     });
     return;
   }
-  // Servir o PDF (inline para ver, ou anexo para baixar). Recompila se ainda não houver PDF.
-  if ((u.pathname === "/api/cv/pdf" || u.pathname === "/api/cv/download") && req.method === "GET") {
-    const dir = appDir(u.searchParams.get("id"));
-    if (!dir) { res.writeHead(404); return res.end("não encontrado"); }
+  // Servir o PDF (inline para ver, ou anexo para baixar). Recompila se o .tex mudou.
+  if ((u.pathname === "/api/mycv/pdf" || u.pathname === "/api/mycv/download") && req.method === "GET") {
     const fmt = u.searchParams.get("fmt") || "pdf";
-    const baixar = u.pathname === "/api/cv/download";
+    const baixar = u.pathname === "/api/mycv/download";
     const nomeBase = "Currículo - Guilherme Augusto S. F. C. Oliveira";
     // Cabeçalho HTTP precisa ser ASCII: fallback sem acento + filename* (UTF-8, RFC 5987).
     const disp = (ext) => {
@@ -796,19 +752,20 @@ const server = http.createServer((req, res) => {
         '; filename="' + ascii + '"; filename*=UTF-8\'\'' + encodeURIComponent(nomeBase + "." + ext);
     };
     if (fmt === "tex") {
-      const p = path.join(dir, "cv_draft.tex");
+      const p = path.join(CV_DIR, CV_TEX);
       if (!fs.existsSync(p)) { res.writeHead(404); return res.end("sem .tex"); }
       res.writeHead(200, { "Content-Type": "application/x-tex; charset=utf-8", "Content-Disposition": disp("tex") });
       return res.end(fs.readFileSync(p));
     }
     const servePdf = () => {
-      const pdf = findCvPdf(dir);
-      if (!pdf) { res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" }); return res.end("PDF ainda não gerado. Edite e salve para compilar."); }
+      const p = path.join(CV_DIR, CV_PDF);
+      if (!fs.existsSync(p)) { res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" }); return res.end("PDF ainda não gerado. Clique em Editar e Salvar para compilar."); }
       res.writeHead(200, { "Content-Type": "application/pdf", "Content-Disposition": disp("pdf") });
-      fs.createReadStream(path.join(dir, pdf)).pipe(res);
+      fs.createReadStream(p).pipe(res);
     };
-    if (findCvPdf(dir)) return servePdf();
-    return compileCv(dir, () => servePdf()); // sem PDF ainda → tenta compilar antes de servir
+    // Mantém o PDF sempre em dia: se o .tex foi enriquecido, recompila antes de servir.
+    if (cvPdfDesatualizado()) return compileTex(CV_DIR, CV_TEX, () => servePdf());
+    return servePdf();
   }
 
   // Upload do currículo → salva em documents/cv/ (pasta privada, gitignored).
