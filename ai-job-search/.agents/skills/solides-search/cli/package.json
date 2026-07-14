@@ -1,0 +1,20 @@
+{
+  "name": "solides-cli",
+  "version": "1.0.0",
+  "description": "CLI for searching the public Sólides jobs board (vagas.solides.com.br), a multi-company board in Brazil, via its public JSON API gateway — no authentication, zero runtime dependencies.",
+  "type": "module",
+  "main": "src/cli.ts",
+  "bin": {
+    "solides-search": "src/cli.ts"
+  },
+  "scripts": {
+    "start": "bun run src/cli.ts",
+    "test": "bun test --timeout 30000",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/bun": "latest"
+  }
+}
