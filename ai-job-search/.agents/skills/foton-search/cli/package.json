@@ -1,0 +1,20 @@
+{
+  "name": "foton-cli",
+  "version": "1.0.0",
+  "description": "CLI for searching openings on Fóton Informática's own careers page (foton.la/vagas) — server-rendered HTML scrape, zero runtime dependencies.",
+  "type": "module",
+  "main": "src/cli.ts",
+  "bin": {
+    "foton-search": "src/cli.ts"
+  },
+  "scripts": {
+    "start": "bun run src/cli.ts",
+    "test": "bun test --timeout 30000",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/bun": "latest"
+  }
+}
