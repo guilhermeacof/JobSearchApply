@@ -279,6 +279,14 @@ tr.aplicada td:first-child{box-shadow:inset 3px 0 0 var(--good)}
             <button class="chip" data-model="" aria-pressed="false">Todos</button>
           </div>
         </div>
+        <div class="modelbox">
+          <label class="lbl">Localização</label>
+          <div class="chips" id="escopo" role="group" aria-label="Localização">
+            <button class="chip" data-pais="br" aria-pressed="true">🇧🇷 Só Brasil</button>
+            <button class="chip" data-pais="world" aria-pressed="false">🌎 Mundo todo</button>
+          </div>
+          <p class="sub" style="margin:6px 0 0;font-size:12.5px">“Mundo todo” inclui vagas de fora (multinacionais/remotas globais). “Só Brasil” traz vagas no Brasil + remotas abertas ao país.</p>
+        </div>
       </div>
 
       <div class="actions">
@@ -501,6 +509,7 @@ tr.aplicada td:first-child{box-shadow:inset 3px 0 0 var(--good)}
 const $ = (s) => document.querySelector(s);
 let running = false;
 let modelo = "remote";   // filtro de modelo de trabalho para a busca
+let pais = "br";         // escopo de localização: br (Só Brasil) | world (Mundo todo)
 let filtro = "reco";     // Recomendadas / Todas / Nota mínima
 let aplicadasUrls = [];
 let JOBS = [];
@@ -941,7 +950,7 @@ function runSearch(cargo){
   const box=$("#searchbox"); box.classList.add("on");
   $("#sMsg").textContent="Preparando…"; $("#sPct").textContent="0%"; $("#sFill").style.width="0%";
   box.scrollIntoView({behavior:"smooth",block:"center"});
-  searchEv = new EventSource("/api/search?cargo="+encodeURIComponent(cargo)+"&remote="+encodeURIComponent(modelo));
+  searchEv = new EventSource("/api/search?cargo="+encodeURIComponent(cargo)+"&remote="+encodeURIComponent(modelo)+"&pais="+encodeURIComponent(pais));
   searchEv.addEventListener("progress",e=>{ const d=JSON.parse(e.data);
     if(d.msg) $("#sMsg").textContent=d.msg;
     if(d.trust) detectarConfianca(d.msg);
@@ -1000,6 +1009,12 @@ $("#modelo").addEventListener("click",(e)=>{
   const b=e.target.closest(".chip"); if(!b) return;
   modelo=b.dataset.model;
   $("#modelo").querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed",String(c===b)));
+});
+// Escopo de localização (Só Brasil / Mundo todo)
+$("#escopo").addEventListener("click",(e)=>{
+  const b=e.target.closest(".chip"); if(!b) return;
+  pais=b.dataset.pais;
+  $("#escopo").querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed",String(c===b)));
 });
 
 // Seletor de filtro das vagas (Recomendadas / Todas / Nota mínima)

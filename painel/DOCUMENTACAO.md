@@ -125,7 +125,19 @@ e reaproveitado como está. Ao **preparar candidatura**, o painel instrui o assi
 
 ## Changelog
 
-### 2026-07-13 — novo visual do currículo (Estilo "Clássico refinado", verde-petróleo)
+### 2026-07-14 — busca usa todos os portais + filtro Brasil/Mundo
+- **Todos os portais no botão "Buscar novas vagas":** o `buildSearchTasks` passou a
+  incluir os 14 novos buscadores além dos 4 originais — portais BR por palavra-chave
+  (Gupy, Vagas, InfoJobs, Empregos, Programathor, Trampos, Sólides, LinkedIn) em algumas
+  variações do cargo; e os únicos/globais uma vez (BNE, Compleo, Fóton, Freehire, Remotive,
+  We Work Remotely, Greenhouse, Lever, Workday, SONDA). A busca ficou bem mais abrangente
+  (e mais demorada — há barra de progresso e botão cancelar).
+- **Filtro de localização (front):** novo grupo de chips **"🇧🇷 Só Brasil / 🌎 Mundo todo"**
+  ao lado do modelo de trabalho (padrão: Só Brasil). Vai como `pais=br|world` para
+  `/api/search`. Com "Só Brasil", as vagas vindas dos portais **internacionais** (marcados
+  `intl`) passam por `isBrLocation(location)` e as de fora são descartadas — mantendo Brasil,
+  remotas/worldwide/LatAm, e descartando cidades estrangeiras (Cebu, Pune, México…). Portais
+  BR nativos não são filtrados. Lógica testada: 16/16 casos corretos.
 - A pedido do usuário (o moderncv/banking estava "feio"), o `cv/main_example.tex` foi
   **redesenhado**: template próprio em `article` — uma coluna, tipografia Lato, cor de
   destaque **verde-petróleo** (#0F6E56), títulos de seção com filete, cabeçalho com nome

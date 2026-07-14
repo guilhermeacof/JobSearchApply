@@ -393,20 +393,52 @@ function heurFit(title) {
 }
 
 // Monta as consultas (portal × variante do cargo). remote: remote|hybrid|onsite|"".
+// Uma localização é "do Brasil" (ou aberta ao Brasil)? Usada para filtrar os portais
+// internacionais quando o usuário escolhe "Só Brasil". Localização vazia → mantém
+// (portais BR muitas vezes não trazem o país); remoto/worldwide/LatAm → mantém.
+function isBrLocation(loc) {
+  if (!loc) return true;
+  const s = String(loc).toLowerCase();
+  if (/bras|brazil|remoto|remote|home\s*office|any\s*where|world\s*wide|worldwide|latam|latin\s*america|am[ée]rica\s*latina|h[íi]brido|presencial/.test(s)) return true;
+  if (/(^|[^a-z])(ac|al|ap|am|ba|ce|df|es|go|ma|mt|ms|mg|pa|pb|pr|pe|pi|rj|rn|rs|ro|rr|sc|sp|se|to)([^a-z]|$)/.test(s)) return true;
+  return false;
+}
+
+// Monta as consultas. Portais BR por palavra-chave (algumas variações); portais únicos
+// e internacionais rodam uma vez com o termo principal. `intl:true` marca os que podem
+// trazer vaga de fora — filtrados por localização quando o escopo é "Só Brasil".
 function buildSearchTasks(variants, remote) {
   const tasks = [];
   const rf = remote ? ["--remote", remote] : [];
   const cli = (skill) => [".agents/skills/" + skill + "/cli/src/cli.ts"];
-  for (const v of variants) {
-    tasks.push({ portal: "gupy", label: "Gupy", term: v,
-      args: ["run", ...cli("gupy-search"), "search", "-q", v, ...rf, "--jobage", "14", "--limit", "10", "--format", "json"] });
-    tasks.push({ portal: "linkedin", label: "LinkedIn", term: v,
-      args: ["run", ...cli("linkedin-search"), "search", "-q", v, "-l", "Brazil", ...rf, "--jobage", "14", "--limit", "10", "--format", "json"] });
-    tasks.push({ portal: "freehire", label: "Freehire", term: v,
-      args: ["run", ...cli("freehire-search"), "search", "-q", v, "--country", "BR", ...rf, "--jobage", "14", "--limit", "15", "--format", "json"] });
-    tasks.push({ portal: "vagas", label: "Vagas.com", term: v,
-      args: ["run", ...cli("vagas-search"), "search", "-q", v, "--jobage", "14", "--limit", "20", "--format", "json"] });
+  const add = (portal, label, skill, extra, term, intl) =>
+    tasks.push({ portal, label, term, intl: !!intl,
+      args: ["run", ...cli(skill), "search", "-q", term, ...extra, "--format", "json"] });
+
+  const kw = variants.slice(0, 3);      // portais por palavra-chave: 3 variações do cargo
+  const primary = variants[0] || "";    // termo principal para os portais que rodam 1x
+
+  for (const v of kw) {
+    add("gupy", "Gupy", "gupy-search", [...rf, "--jobage", "14", "--limit", "10"], v);
+    add("vagas", "Vagas.com", "vagas-search", ["--jobage", "14", "--limit", "15"], v);
+    add("infojobs", "InfoJobs", "infojobs-search", ["--limit", "12"], v);
+    add("empregos", "Empregos.com.br", "empregos-search", ["--limit", "12"], v);
+    add("programathor", "Programathor", "programathor-search", ["--limit", "12"], v);
+    add("trampos", "Trampos.co", "trampos-search", ["--limit", "12"], v);
+    add("solides", "Sólides", "solides-search", ["--limit", "15"], v);
+    add("linkedin", "LinkedIn", "linkedin-search", ["-l", "Brazil", ...rf, "--jobage", "14", "--limit", "10"], v);
   }
+  // Portais que rodam uma vez (board único / empresa única / registro global)
+  add("bne", "BNE", "bne-search", ["--limit", "6"], primary);
+  add("compleo", "Compleo", "compleo-search", ["--limit", "15"], primary);
+  add("foton", "Fóton", "foton-search", ["--limit", "20"], primary);
+  add("freehire", "Freehire", "freehire-search", ["--country", "BR", ...rf, "--jobage", "14", "--limit", "15"], primary, true);
+  add("remotive", "Remotive", "remotive-search", ["--limit", "15"], primary, true);
+  add("weworkremotely", "We Work Remotely", "weworkremotely-search", ["--limit", "15"], primary, true);
+  add("greenhouse", "Greenhouse", "greenhouse-search", ["--limit", "25"], primary, true);
+  add("lever", "Lever", "lever-search", ["--limit", "25"], primary, true);
+  add("workday", "Workday", "workday-search", ["--limit", "20"], primary, true);
+  add("sonda", "SONDA", "sonda-search", ["--limit", "20"], primary, true);
   return tasks;
 }
 
@@ -433,7 +465,7 @@ function mergeIntoSeen(collected) {
   return novas;
 }
 
-function runSearch(cargo, remote, res) {
+function runSearch(cargo, remote, soBrasil, res) {
   res.writeHead(200, { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-cache", Connection: "keep-alive" });
   const send = (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
   let cancelled = false, curChild = null;
@@ -488,6 +520,8 @@ function runSearch(cargo, remote, res) {
           const r = JSON.parse(out2);
           for (const j of r.results || []) {
             if (!j.url) continue;
+            // "Só Brasil": descarta vagas de fora vindas dos portais internacionais.
+            if (soBrasil && t.intl && !isBrLocation(j.location)) continue;
             const nk = norm(j.company) + "|" + norm(j.title);
             if (Object.values(collected).some((c) => c._nk === nk)) continue;
             collected[j.url] = { _nk: nk, title: j.title, company: j.company, url: j.url,
@@ -572,8 +606,9 @@ const server = http.createServer((req, res) => {
   if (u.pathname === "/api/search") {
     const cargo = (u.searchParams.get("cargo") || "").trim();
     const remote = u.searchParams.get("remote") || ""; // remote|hybrid|onsite|""
+    const soBrasil = (u.searchParams.get("pais") || "br") !== "world"; // br (default) | world
     if (!cargo) { res.writeHead(400); return res.end("cargo ausente"); }
-    return runSearch(cargo, remote, res);
+    return runSearch(cargo, remote, soBrasil, res);
   }
 
   // Autoriza esta pasta no Claude Code (resolve o erro de "workspace not trusted"),
