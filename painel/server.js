@@ -661,6 +661,17 @@ function runSearch(cargo, remote, soBrasil, res) {
     // portais devolve (ver PALAVRAS_GENERICAS). Inclui o que o usuário digitou.
     const distintivos = termosDistintivos([cargo, ...variants]);
 
+    // Guarda as variações usadas. Sem isso, a limpeza do radar só teria o cargo digitado,
+    // e o cargo sozinho é PERIGOSO: "Analista de Testes Sr" gera só o termo "teste" e
+    // apagaria "QA Automation Engineer" (nota 91) por engano. Medido em 15/07/2026: uma
+    // limpeza pelo cargo tiraria 114 vagas boas; com as variações, tira só as 39 de lixo.
+    try {
+      const cfg = readConfig();
+      cfg.cargo = cargo;
+      cfg.termosBusca = variants;
+      writeConfig(cfg);
+    } catch {}
+
     const tasks = buildSearchTasks(variants, remote);
     const total = tasks.length;
     const collected = {};
@@ -940,6 +951,54 @@ const server = http.createServer((req, res) => {
       });
     });
     return;
+  }
+
+  // Limpa o LIXO QUE JÁ ESTÁ no radar. O filtro da busca só age sobre resultados novos —
+  // as vagas coletadas antes dele existir (RH, enfermagem, mainframe…) continuavam na
+  // lista. Aqui a mesma regra é aplicada ao que já foi guardado.
+  //   GET  → prévia: diz o que sairia, sem mexer em nada.
+  //   POST → aplica, marcando status "skipped" (o painel já ignora esse status).
+  // Não apaga: "skipped" é reversível e preserva o histórico de dedup do scraper.
+  if (u.pathname === "/api/limpar-radar") {
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    const cfg = readConfig();
+    // Exige as VARIAÇÕES, nunca só o cargo. Isso não é preciosismo: "Analista de Testes Sr"
+    // sozinho gera apenas o termo "teste" — não vazio, então passaria batido — e apagaria
+    // "QA Automation Engineer" (nota 91) e outras 113 vagas boas. Medido em 15/07/2026.
+    if (!Array.isArray(cfg.termosBusca) || !cfg.termosBusca.length) {
+      return res.end(JSON.stringify({ erro: "ainda não sei como o seu cargo é escrito por aí " +
+        "(QA, Quality Assurance, SDET…). Clique em “Buscar novas vagas” uma vez: é a busca que " +
+        "descobre essas variações. Sem elas, a limpeza tiraria vagas boas por engano." }));
+    }
+    const termos = [cfg.cargo || "", ...cfg.termosBusca].filter(Boolean);
+    const distintivos = termosDistintivos(termos);
+    if (!distintivos.size) {
+      return res.end(JSON.stringify({ erro: "os termos da sua busca são todos genéricos " +
+        "(“analista”, “sênior”…), então não dá para dizer o que é fora do tema sem risco." }));
+    }
+    const file = path.join(WORKSPACE, "job_scraper", "seen_jobs.json");
+    let d;
+    try { d = JSON.parse(fs.readFileSync(file, "utf8")); }
+    catch (e) { return res.end(JSON.stringify({ erro: "não consegui ler as vagas: " + e.message })); }
+    const seen = d.seen || {};
+    const alvos = Object.entries(seen).filter(([, e]) =>
+      e.status !== "skipped" && e.status !== "expired" && !relevante(e.title, distintivos));
+    const amostra = alvos.slice(0, 12).map(([, e]) => ({ title: e.title, company: e.company || null, score: e.rank_score ?? null }));
+    const maiorNota = alvos.reduce((m, [, e]) => Math.max(m, e.rank_score ?? 0), 0);
+
+    if (req.method !== "POST") {   // prévia
+      return res.end(JSON.stringify({ previa: true, total: alvos.length,
+        termos: [...distintivos], maiorNota, amostra }));
+    }
+    for (const [, e] of alvos) {
+      e.status = "skipped";
+      e.notes = "Fora do tema da busca (limpeza do radar em " +
+        new Date().toISOString().slice(0, 10) + "): o título não bate com nenhum termo de “" +
+        (cfg.cargo || "") + "”.";
+    }
+    try { fs.writeFileSync(file, JSON.stringify(d, null, 2)); }
+    catch (e) { return res.end(JSON.stringify({ erro: "não consegui gravar: " + e.message })); }
+    return res.end(JSON.stringify({ removidas: alvos.length, maiorNota, amostra }));
   }
 
   // Avalia (ranqueia) as vagas da FILA em LOTES, até zerar. Antes, uma única execução

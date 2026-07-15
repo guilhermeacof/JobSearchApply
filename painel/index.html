@@ -346,6 +346,11 @@ tr.aplicada td:first-child{box-shadow:inset 3px 0 0 var(--good)}
           <span>Meus dados para formulários
             <small>Pretensão, disponibilidade… você preenche uma vez e o sistema reusa</small></span>
         </button>
+        <button class="btn" id="limparBtn">
+          <span class="ico">🧹</span>
+          <span>Limpar o radar
+            <small>Tira as vagas que não são do seu cargo (RH, enfermagem…) — mostra antes o que vai sair</small></span>
+        </button>
       </div>
 
       <div class="applybox">
@@ -942,6 +947,33 @@ async function rankBatch(){
   rankCtrl=null; loadState();
   if(!erro && !cancelado) setTimeout(()=>box.classList.remove("on"), 6000);
 }
+// Limpeza do radar: SEMPRE mostra a prévia antes de mexer. O usuário decide vendo a
+// lista — e o maior nota que sairia, que é o sinal de alerta se algo bom for junto.
+async function limparRadar(){
+  if(running) return;
+  let p;
+  try{ p = await (await fetch("/api/limpar-radar")).json(); }
+  catch(e){ return alert("Não consegui verificar o radar: "+e.message); }
+  if(p.erro) return alert(p.erro);
+  if(!p.total) return alert("O radar já está limpo: nenhuma vaga fora do tema.");
+  const lista = p.amostra.map(a=>"  • ["+(a.score==null?"sem nota":"nota "+a.score)+"] "+a.title
+    +(a.company?" — "+a.company:"")).join("\n");
+  const resto = p.total>p.amostra.length ? "\n  … e mais "+(p.total-p.amostra.length)+"." : "";
+  if(!confirm(
+    "Tirar "+p.total+" vaga(s) que não são do seu cargo?\n\n"+lista+resto+
+    "\n\nA maior nota entre elas é "+p.maiorNota+" — se esse número for alto, cancele e me avise."+
+    "\n\nElas não são apagadas: saem da lista e continuam no arquivo, dá para reverter."
+  )) return;
+  running=true; document.querySelectorAll(".btn").forEach(b=>b.disabled=true);
+  try{
+    const r = await (await fetch("/api/limpar-radar",{method:"POST"})).json();
+    if(r.erro) alert("Não consegui limpar: "+r.erro);
+    else alert("Pronto: "+r.removidas+" vaga(s) fora do tema saíram do radar.");
+  }catch(e){ alert("Falhou: "+e.message); }
+  running=false; document.querySelectorAll(".btn").forEach(b=>b.disabled=false);
+  loadState();
+}
+$("#limparBtn").addEventListener("click", limparRadar);
 $("#rankBtn").addEventListener("click", rankBatch);
 $("#rCancel").addEventListener("click",()=>{ if(rankCtrl) rankCtrl.abort(); });
 

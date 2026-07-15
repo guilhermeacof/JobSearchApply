@@ -125,6 +125,37 @@ e reaproveitado como está. Ao **preparar candidatura**, o painel instrui o assi
 
 ## Changelog
 
+### 2026-07-15 — "Limpar o radar": tira o lixo que JÁ estava guardado
+O filtro anti-lixo só age **no momento da busca**, sobre resultados novos. As 206 vagas do
+radar entraram em **11/07**, antes de o filtro existir — então RH, enfermagem, mainframe e
+cosméticos continuavam na lista. Faltava aplicar a mesma regra ao que já estava guardado.
+
+**O perigo que quase passou batido.** Uma limpeza usando o cargo configurado
+("Analista de Testes Sr") geraria só o termo distintivo `teste` — e apagaria **114 vagas
+boas**, entre elas "QA Automation Engineer | Sênior (Remote)" de **nota 91**, porque o
+título delas não tem "teste". Como `teste` não é um conjunto vazio, a validação de
+"conjunto vazio" deixaria passar. Por isso:
+- `runSearch` agora **persiste as variações** em `config.json` (`termosBusca`), que é o que
+  a busca já descobre via Claude ("QA", "Quality Assurance", "SDET"…).
+- `/api/limpar-radar` **exige `termosBusca`** e recusa se só houver o cargo, explicando que
+  é preciso buscar uma vez antes. Testado: GET e POST recusam e o radar fica intacto.
+
+**Como funciona.** `GET /api/limpar-radar` → prévia (o que sairia, a amostra e a **maior
+nota** entre elas — o sinal de alerta se algo bom for junto); `POST` → aplica. O painel
+**sempre** mostra a prévia num confirm antes. Não apaga nada: marca `status: "skipped"`
+(que o `readAllJobs` já ignora), então é reversível e o dedup do scraper segue funcionando.
+
+**Resultado medido:** 39 removidas, maior nota entre elas **41**; radar 206 → 167;
+**nenhuma vaga com nota ≥ 45 saiu**; os 411 registros do arquivo foram preservados.
+Resolveu de quebra as 2 vagas do trampos.co que os agentes não conseguiram ler e que
+estavam pendentes: eram "Analista de Growth Sênior" e "Analista de Performance (Google Ads
+e Meta Ads)" — marketing. A fila zerou.
+
+**Limite conhecido:** o filtro só lê o título, então sobrevivem "Analista de QA Pleno"
+(alimentos), "Analista Corporativo Controle Qualidade" (frigorífico) e "Controle de
+Qualidade Microbiológico" — títulos indistinguíveis dos de software. Todas já estão com
+nota baixa (14, 14, 9), no fim da lista.
+
 ### 2026-07-15 — explicação ao passar o mouse em "recomendadas" e "descartadas"
 O card "Já avaliadas" mostrava "115 recomendadas · 89 descartadas" sem dizer o motivo — o
 usuário não tinha como saber o que reprovou uma vaga. Agora as duas partes são alvos de
