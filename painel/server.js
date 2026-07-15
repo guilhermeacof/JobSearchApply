@@ -321,10 +321,7 @@ function buildState() {
       empresa: r.company, vaga: r.role, status: r.status,
       data: r.date, score: r.fit_rating,
     })),
-    // Só as REALMENTE enviadas: é isto que dispara o aviso "você já se candidatou" ao
-    // colar um link. Incluir as preparadas aqui avisaria sobre vaga nunca enviada.
-    // (O estado "preparada" por vaga vai em vagas[].preparada, vindo do markApplied.)
-    aplicadasUrls: tracker.filter((r) => !ehPreparada(r)).map((r) => (r.source || "").trim()).filter(Boolean),
+    // O estado por vaga (aplicada / preparada) vai em vagas[], vindo do markApplied.
     // TODAS as vagas (a interface filtra: recomendadas / todas / nota mínima).
     vagas: all,
   };
@@ -1291,15 +1288,19 @@ const server = http.createServer((req, res) => {
       const todas = (body.jobs || []).slice(0, 20);
       if (!todas.length) { linha({ erro: "nenhuma vaga selecionada" }); return res.end(); }
 
-      // Vaga já registrada no tracker não entra de novo (evita linha duplicada se a
-      // pessoa reselecionar uma que já preparou).
-      const jaNoTracker = new Set(readTracker().map((r) => (r.source || "").trim()).filter(Boolean));
-      const jobs = [], pulados = [];
+      // Estar no tracker não é tudo igual:
+      //  - JÁ ENVIADA  → não faz sentido preparar de novo; sai fora com aviso.
+      //  - JÁ PREPARADA → prepara sim (a pessoa pode ter mudado o perfil e querer
+      //    respostas novas), mas SEM criar uma segunda linha no tracker.
+      const tracker = readTracker();
+      const jaEnviadas = new Set(tracker.filter((r) => !ehPreparada(r)).map((r) => (r.source || "").trim()).filter(Boolean));
+      const jaPreparadas = new Set(tracker.filter(ehPreparada).map((r) => (r.source || "").trim()).filter(Boolean));
+      const jobs = [], enviadas = [];
       for (const j of todas) {
-        if (jaNoTracker.has(String(j.url || "").trim())) pulados.push(j); else jobs.push(j);
+        if (jaEnviadas.has(String(j.url || "").trim())) enviadas.push(j); else jobs.push(j);
       }
-      for (const j of pulados) linha({ aviso: "“" + (j.title || j.url) + "” já estava no tracker — não registrei de novo" });
-      if (!jobs.length) { linha({ fim: { preparadas: 0, total: todas.length, msg: "Nada a fazer: todas as vagas selecionadas já estavam registradas." } }); return res.end(); }
+      for (const j of enviadas) linha({ aviso: "“" + (j.title || j.url) + "” você já se candidatou — não preparei de novo" });
+      if (!jobs.length) { linha({ fim: { preparadas: 0, total: todas.length, msg: "Nada a fazer: você já se candidatou a todas as vagas selecionadas." } }); return res.end(); }
 
       // Notas do radar, para preencher o fit_rating do tracker sem perguntar ao assistente.
       const notas = {};
@@ -1329,6 +1330,8 @@ const server = http.createServer((req, res) => {
         store.vagas[job.url] = vaga;
         writeAnswers(store);
         escreverSnapshotRespostas(vaga);
+        // Re-preparar uma vaga só atualiza as respostas: a linha dela já existe.
+        if (jaPreparadas.has(job.url)) return campos.length;
         appendTracker({
           date: hoje,
           company: vaga.company,
@@ -1355,7 +1358,9 @@ const server = http.createServer((req, res) => {
 
       const rodarVaga = (i) => new Promise((resolve) => {
         const job = jobs[i];
-        const nome = (job.title || "") + (job.company ? " — " + job.company : "");
+        // Colando um link avulso não há título nem empresa: o link vira o nome, senão
+        // o progresso apareceria como ": Lendo o anúncio…".
+        const nome = (job.title || "") + (job.company ? " — " + job.company : "") || String(job.url || "").slice(0, 70);
         const prompt =
           'Prepare a minha candidatura para esta vaga:\n' + nome + '\n' + job.url + '\n\n' +
           'NÃO escreva carta de apresentação. NÃO gere nem altere currículo — vou com o meu currículo ' +

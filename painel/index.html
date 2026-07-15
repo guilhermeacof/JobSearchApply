@@ -572,8 +572,9 @@ tr.preparada td:first-child{box-shadow:inset 3px 0 0 #c88c00}
   </div>
 
   <div class="note">
-    <b>Importante:</b> o assistente prepara tudo — encontra as vagas, avalia e escreve o currículo e a carta sob medida.
-    O <b>envio final</b> de cada candidatura você confirma pessoalmente no site da empresa (os sites de vaga exigem isso).
+    <b>Importante:</b> o assistente encontra as vagas, avalia e prepara as <b>respostas do formulário</b> de cada uma —
+    o currículo é sempre o seu, único, sem carta de apresentação.
+    O <b>envio final</b> é sempre seu, no site da empresa: o painel nunca envia candidatura no seu nome.
     Deixe a janela preta do "Painel" aberta enquanto usa esta página.
   </div>
 
@@ -586,7 +587,6 @@ let running = false;
 let modelo = "remote";   // filtro de modelo de trabalho para a busca
 let pais = "br";         // escopo de localização: br (Só Brasil) | world (Mundo todo)
 let filtro = "reco";     // Recomendadas / Todas / Nota mínima
-let aplicadasUrls = [];
 let JOBS = [];
 let CURRENT = null;
 const SELEC = new Set();  // URLs das vagas selecionadas (checkbox) para ações em massa
@@ -603,7 +603,6 @@ async function loadState(){
       card(r.urgentes, "Prazo ≤ 7 dias", true);
     JOBS = s.vagas || [];
     renderJobs();
-    aplicadasUrls = s.aplicadasUrls || [];
     const cargo = s.cargo || "";
     $("#hdrCargo").textContent = cargo || "defina seu cargo";
     // Só preenche o campo se o usuário não estiver digitando nele.
@@ -761,20 +760,11 @@ $("#overlay").addEventListener("click",(e)=>{ if(e.target.id==="overlay") closeD
 document.addEventListener("keydown",(e)=>{ if(e.key==="Escape"){ closeBulk(); closeAnswers(); closeDetail(); } });
 
 $("#mSite").addEventListener("click",()=>{ if(CURRENT) window.open(CURRENT.url,"_blank","noopener"); });
-// Prompt de candidatura para UMA vaga — usa o currículo único, sem gerar um novo.
-function promptApply(url){
-  return "Prepare a candidatura para esta vaga: "+url+". "+
-    "IMPORTANTE: use o MEU CURRÍCULO ÚNICO (cv/main_example.tex) exatamente como está — "+
-    "NÃO gere um currículo novo/direcionado para a vaga nem altere o meu currículo. "+
-    "Escreva SOMENTE uma carta de apresentação curta e específica desta empresa/vaga, em português, e compile o PDF dela. "+
-    "Garanta o PDF do currículo único compilado (cv/main_example.pdf). Copie o currículo único e a carta para a pasta da "+
-    "candidatura, registre no tracker e me diga onde os arquivos ficaram. Avalie a adequação em uma linha, sem mexer no currículo.";
-}
 $("#mApply").addEventListener("click",()=>{
   if(!CURRENT) return;
-  if(CURRENT.aplicada && !confirm("⚠ Você JÁ se candidatou a esta vaga.\n\nPreparar os documentos mesmo assim?")) return;
-  const url = CURRENT.url; closeDetail();
-  run(promptApply(url));
+  const j={url:CURRENT.url,title:CURRENT.title,company:CURRENT.company};
+  closeDetail();
+  prepararCandidaturas([j]);   // quem já se candidatou é barrado pelo servidor, com aviso
 });
 // ---------- Respostas do formulário (campos da Gupy etc.) ----------
 let ANS_JOB=null; // vaga atual do modal de respostas (null = editando os valores padrão)
@@ -1092,13 +1082,13 @@ $("#bulkAddReval").addEventListener("click", async ()=>{
     $("#bulkResult").innerHTML='<p style="color:var(--urgent)">Falha: '+esc(e.message)+'</p>'; }
 });
 
-// ---- Preparar candidaturas em massa (uma vaga por assistente, todas ao mesmo tempo) ----
+// ---- Preparar candidaturas (uma vaga por assistente, todas ao mesmo tempo) ----
 // Sem carta de apresentação e sem janela de confirmação: marcou e clicou, já vai.
 // Cada vaga roda no seu próprio assistente, então 5 selecionadas = 5 em paralelo.
+// UMA vaga (fluxo avulso) é só uma lista de uma — mesmo caminho, mesmo endpoint.
 let applyCtrl=null;
-async function bulkApply(){
-  if(running) return;
-  const jobs=jobsSelecionadas(); if(!jobs.length) return;
+async function prepararCandidaturas(jobs){
+  if(running || !jobs || !jobs.length) return;
   running=true; document.querySelectorAll(".btn").forEach(b=>b.disabled=true);
   const box=$("#applybox"); box.classList.add("on");
   $("#aMsg").textContent="Preparando…"; $("#aPct").textContent="0%"; $("#aFill").style.width="0%";
@@ -1144,7 +1134,10 @@ async function bulkApply(){
   running=false; document.querySelectorAll(".btn").forEach(b=>b.disabled=false);
   applyCtrl=null; loadState();
 }
-$("#bulkApply").addEventListener("click", bulkApply);
+// Os três caminhos de candidatura (massa, janela da vaga, colar link) passam pela
+// MESMA função: antes o avulso tinha um fluxo próprio que escrevia carta, e dois
+// botões de nome parecido faziam coisas diferentes.
+$("#bulkApply").addEventListener("click", ()=>prepararCandidaturas(jobsSelecionadas()));
 $("#aCancel").addEventListener("click",()=>{ if(applyCtrl) applyCtrl.abort(); });
 
 // ================= Meu currículo (único) =================
@@ -1362,11 +1355,9 @@ $("#setupBtn").addEventListener("click", ()=>run(
 $("#applyBtn").addEventListener("click",()=>{
   const link = $("#link").value.trim();
   if(!link){ $("#link").focus(); return; }
-  // Segurança: avisa se você já se candidatou a esta vaga.
-  if(aplicadasUrls.some(u=>u && (u===link || u.split("?")[0]===link.split("?")[0]))){
-    if(!confirm("⚠ Você JÁ se candidatou a esta vaga.\n\nQuer preparar os documentos mesmo assim?")) return;
-  }
-  run(promptApply(link));
+  // Sem título/empresa: o assistente lê os dois do próprio anúncio. Quem já se
+  // candidatou é barrado pelo servidor (a mesma regra da massa), com aviso.
+  prepararCandidaturas([{url:link,title:"",company:""}]);
 });
 $("#closeC").addEventListener("click",()=>$("#console").classList.remove("on"));
 
