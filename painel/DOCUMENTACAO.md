@@ -125,6 +125,22 @@ e reaproveitado como está. Ao **preparar candidatura**, o painel instrui o assi
 
 ## Changelog
 
+### 2026-07-14 — progresso ao vivo nas ações em massa (não parece mais travado)
+- **Problema:** "Adicionando ao currículo e reavaliando N vagas…" ficava minutos só com um
+  spinner mudo — parecia travado. O `--print` normal do Claude não emite nada até terminar.
+- **Solução:** novo `runClaudeStream()` roda o Claude com `--output-format stream-json
+  --verbose`, que emite **um JSON por passo** (pensando, lendo arquivo, editando, resultado).
+  O `eventoAmigavel()` traduz cada evento em português — *"Lendo CLAUDE.md…"*,
+  *"Atualizando main_example.tex…"*, *"Analisando…"*.
+- **Transporte:** `/api/bulk-analyze` e `/api/bulk-adjust` passaram de JSON único para
+  **NDJSON em streaming** (uma linha por evento: `{log}` / `{fim}` / `{erro}`), lido no
+  painel por `fetch` + `response.body.getReader()` (helper `lerFluxo`).
+- **No painel:** mostra a **etapa atual** ao vivo + um **cronômetro** (`iniciarTimer`).
+- **Honestidade:** o texto agora informa quando há corte — *"reavaliando 20 vaga(s)
+  (as 20 primeiras de 208)"* — antes dizia 208 e processava só 20, calado.
+- Testado com um Claude simulado emitindo eventos: os 6 passos chegaram ao vivo, o
+  cronômetro correu e o resultado final foi entregue.
+
 ### 2026-07-14 — erro passa a mostrar a causa real (detalhe técnico)
 - **Problema:** quando a análise/reavaliação falhava, o painel só dizia
   *"não consegui confirmar o resultado"* — escondendo a causa (o que o assistente

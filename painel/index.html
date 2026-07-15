@@ -129,6 +129,11 @@ input[type=file]{font:inherit;font-size:13px;max-width:220px}
 .cvstate{font-size:13.5px;font-weight:600;color:var(--accent)}
 .cvlog{margin-top:12px;padding:12px;background:#2a1512;border:1px solid var(--urgent);border-radius:10px;
   color:#f0b8a8;font-family:ui-monospace,Consolas,monospace;font-size:12px;white-space:pre-wrap;max-height:240px;overflow:auto}
+/* Progresso ao vivo: cronômetro + o que a IA está fazendo agora */
+.timer{margin-left:auto;font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--ink-2);font-weight:700}
+.livelog{margin:6px 0 0;padding:9px 12px;background:var(--bg);border:1px solid var(--line);
+  border-radius:9px;font-size:12.5px;color:var(--ink-2);line-height:1.5;min-height:34px}
+.livelog .step{color:var(--accent);font-weight:600}
 /* Detalhe técnico do erro (o que realmente aconteceu) */
 .errdet{margin-top:8px}
 .errdet summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--ink-2);list-style:revert}
@@ -489,7 +494,8 @@ tr.aplicada td:first-child{box-shadow:inset 3px 0 0 var(--good)}
         <div class="co" id="bulkCo">—</div>
       </div>
       <div class="modal-b">
-        <div class="mbusy" id="bulkBusy" hidden><span class="spin"></span> <span id="bulkBusyTxt">Analisando…</span></div>
+        <div class="mbusy" id="bulkBusy" hidden><span class="spin"></span> <span id="bulkBusyTxt">Analisando…</span><span class="timer" id="bulkTimer"></span></div>
+        <div class="livelog" id="bulkLog" hidden></div>
         <div id="bulkBody" hidden>
           <p class="gapnote">Marque só o que você <b>realmente tem ou já fez</b>. O assistente inclui no seu currículo
             e <b>reavalia todas as vagas selecionadas</b> de uma vez. Cada item mostra em quantas vagas ajuda.</p>
@@ -781,6 +787,35 @@ $("#mAddReval").addEventListener("click", async ()=>{
     loadState();
   }catch(e){ clearBusy(); $("#mResult").hidden=false; $("#mResult").innerHTML='<p style="color:var(--urgent);margin:0">Falha: '+esc(e.message)+'</p>'; }
 });
+// ---- Progresso ao vivo (fluxo NDJSON do servidor) ----
+// Lê a resposta em streaming: cada linha é {log} (passo), {fim} (resultado) ou {erro}.
+async function lerFluxo(resp, onLog){
+  const reader=resp.body.getReader(), dec=new TextDecoder();
+  let buf="", fim=null, erro=null;
+  for(;;){
+    const {done,value}=await reader.read(); if(done) break;
+    buf+=dec.decode(value,{stream:true});
+    let i;
+    while((i=buf.indexOf("\n"))>=0){
+      const l=buf.slice(0,i).trim(); buf=buf.slice(i+1);
+      if(!l) continue;
+      let o; try{ o=JSON.parse(l); }catch{ continue; }
+      if(o.log && onLog) onLog(o.log);
+      if(o.fim) fim=o.fim;
+      if(o.erro) erro=o;
+    }
+  }
+  return {fim,erro};
+}
+let _timer=null;
+function iniciarTimer(el){
+  const t0=Date.now(); clearInterval(_timer);
+  const upd=()=>{ const s=Math.floor((Date.now()-t0)/1000);
+    el.textContent = s<60 ? s+"s" : Math.floor(s/60)+"m "+String(s%60).padStart(2,"0")+"s"; };
+  upd(); _timer=setInterval(upd,1000);
+}
+function pararTimer(){ clearInterval(_timer); _timer=null; }
+
 // ================= Seleção em massa de vagas =================
 function jobsSelecionadas(){ return JOBS.filter(j=>SELEC.has(j.url)).map(j=>({url:j.url,title:j.title,company:j.company})); }
 function atualizarBarraSelecao(){
@@ -811,12 +846,18 @@ $("#bulkAnalyze").addEventListener("click", async ()=>{
   const jobs=jobsSelecionadas(); if(!jobs.length) return;
   $("#bulkCo").textContent = jobs.length+" vaga"+(jobs.length===1?"":"s")+" selecionada"+(jobs.length===1?"":"s");
   $("#bulkBody").hidden=true; $("#bulkResult").hidden=true; $("#bulkAddReval").style.display="none";
-  $("#bulkBusy").hidden=false; $("#bulkBusyTxt").textContent="Analisando as vagas selecionadas… (pode levar 1 a 3 minutos)";
+  const nAna=Math.min(jobs.length,20);
+  $("#bulkBusy").hidden=false;
+  $("#bulkBusyTxt").textContent="Analisando "+nAna+" vaga(s)"+(jobs.length>20?" (as 20 primeiras de "+jobs.length+")":"")+"…";
+  $("#bulkLog").hidden=false; $("#bulkLog").innerHTML='<span class="step">Iniciando…</span>';
+  iniciarTimer($("#bulkTimer"));
   $("#bulkOverlay").classList.add("on");
   try{
     const r=await fetch("/api/bulk-analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({jobs})});
-    const a=await r.json(); $("#bulkBusy").hidden=true;
-    if(a.erro){ $("#bulkBody").hidden=false; $("#bulkGaps").innerHTML=erroHtml(a,"Não consegui analisar:"); return; }
+    const {fim,erro}=await lerFluxo(r,(t)=>{ $("#bulkLog").innerHTML='<span class="step">'+esc(t)+'</span>'; });
+    pararTimer(); $("#bulkBusy").hidden=true; $("#bulkLog").hidden=true;
+    if(erro){ $("#bulkBody").hidden=false; $("#bulkGaps").innerHTML=erroHtml(erro,"Não consegui analisar:"); return; }
+    const a=fim||{};
     const add=a.adicionaveis||[], lac=a.lacunas||[];
     $("#bulkGaps").innerHTML = add.length
       ? add.map(x=>{
@@ -832,18 +873,25 @@ $("#bulkAnalyze").addEventListener("click", async ()=>{
       : "";
     $("#bulkBody").hidden=false;
     $("#bulkAddReval").style.display = add.length ? "" : "none";
-  }catch(e){ $("#bulkBusy").hidden=true; $("#bulkBody").hidden=false; $("#bulkGaps").innerHTML='<p style="color:var(--urgent)">Falha: '+esc(e.message)+'</p>'; }
+  }catch(e){ pararTimer(); $("#bulkBusy").hidden=true; $("#bulkLog").hidden=true; $("#bulkBody").hidden=false;
+    $("#bulkGaps").innerHTML='<p style="color:var(--urgent)">Falha: '+esc(e.message)+'</p>'; }
 });
 $("#bulkAddReval").addEventListener("click", async ()=>{
   const items=[...$("#bulkGaps").querySelectorAll("input:checked")].map(c=>c.value);
   if(!items.length){ $("#bulkGaps").scrollIntoView({block:"center"}); return; }
   const jobs=jobsSelecionadas();
   $("#bulkBody").hidden=true; $("#bulkResult").hidden=true;
-  $("#bulkBusy").hidden=false; $("#bulkBusyTxt").textContent="Adicionando ao currículo e reavaliando "+jobs.length+" vaga(s)… (pode levar alguns minutos)";
+  const nRe=Math.min(jobs.length,20);
+  $("#bulkBusy").hidden=false;
+  $("#bulkBusyTxt").textContent="Adicionando ao currículo e reavaliando "+nRe+" vaga(s)"+(jobs.length>20?" (as 20 primeiras de "+jobs.length+")":"")+"…";
+  $("#bulkLog").hidden=false; $("#bulkLog").innerHTML='<span class="step">Iniciando…</span>';
+  iniciarTimer($("#bulkTimer"));
   try{
     const r=await fetch("/api/bulk-adjust",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({items,jobs})});
-    const a=await r.json(); $("#bulkBusy").hidden=true; $("#bulkResult").hidden=false;
-    if(a.erro){ $("#bulkResult").innerHTML=erroHtml(a,"Não consegui concluir:"); return; }
+    const {fim,erro}=await lerFluxo(r,(t)=>{ $("#bulkLog").innerHTML='<span class="step">'+esc(t)+'</span>'; });
+    pararTimer(); $("#bulkBusy").hidden=true; $("#bulkLog").hidden=true; $("#bulkResult").hidden=false;
+    if(erro){ $("#bulkResult").innerHTML=erroHtml(erro,"Não consegui concluir:"); return; }
+    const a=fim||{};
     const res=a.resultados||[];
     const linhas=res.map(x=>{
       const j=JOBS.find(j=>j.url===x.url);
@@ -853,7 +901,8 @@ $("#bulkAddReval").addEventListener("click", async ()=>{
     $("#bulkResult").innerHTML='<p style="margin:0 0 8px">'+(a.resumo?esc(a.resumo):'Currículo atualizado e vagas reavaliadas.')+'</p>'+linhas+'<p style="margin-top:10px">✓ Currículo atualizado no sistema.</p>';
     $("#bulkAddReval").style.display="none";
     loadState();
-  }catch(e){ $("#bulkBusy").hidden=true; $("#bulkResult").hidden=false; $("#bulkResult").innerHTML='<p style="color:var(--urgent)">Falha: '+esc(e.message)+'</p>'; }
+  }catch(e){ pararTimer(); $("#bulkBusy").hidden=true; $("#bulkLog").hidden=true; $("#bulkResult").hidden=false;
+    $("#bulkResult").innerHTML='<p style="color:var(--urgent)">Falha: '+esc(e.message)+'</p>'; }
 });
 
 // ---- Preparar candidaturas em massa (reusa o console do Claude) ----

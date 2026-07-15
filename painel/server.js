@@ -309,6 +309,68 @@ function runClaudeCollect(prompt, done) {
   child.on("close", () => done(out, null));
 }
 
+// ---------- Claude com progresso ao vivo ----------
+// O modo --print normal fica mudo até terminar (o painel parecia travado). Com
+// --output-format stream-json o Claude emite um JSON por linha a cada passo
+// (pensando, lendo arquivo, editando...), que traduzimos em texto amigável.
+const CLAUDE_ARGS_STREAM = ["--print", "--output-format", "stream-json", "--verbose",
+  "--permission-mode", "bypassPermissions"];
+
+function nomeArq(p) { return String(p || "").split(/[\\/]/).pop() || ""; }
+
+// Converte um evento do stream em uma frase curta para o usuário. null = ignorar.
+function eventoAmigavel(j) {
+  if (!j || !j.type) return null;
+  if (j.type === "system" && j.subtype === "init") return "Iniciando o assistente…";
+  if (j.type === "assistant" && j.message && Array.isArray(j.message.content)) {
+    for (const c of j.message.content) {
+      if (c.type === "tool_use") {
+        const n = c.name || "", i = c.input || {};
+        if (n === "Read") return "Lendo " + (nomeArq(i.file_path) || "arquivo") + "…";
+        if (n === "Edit" || n === "Write" || n === "NotebookEdit")
+          return "Atualizando " + (nomeArq(i.file_path) || "arquivo") + "…";
+        if (n === "Grep" || n === "Glob") return "Procurando no seu perfil…";
+        if (n === "WebFetch" || n === "WebSearch") return "Consultando a vaga na internet…";
+        if (n === "Bash" || n === "PowerShell") return "Rodando uma verificação…";
+        return "Usando " + n + "…";
+      }
+      if (c.type === "thinking") return "Analisando…";
+      if (c.type === "text" && String(c.text || "").trim())
+        return String(c.text).trim().replace(/\s+/g, " ").slice(0, 140);
+    }
+  }
+  if (j.type === "user") return "Lendo o resultado…";
+  if (j.type === "result") return "Finalizando…";
+  return null;
+}
+
+// Roda o Claude transmitindo o progresso. onLog(texto) a cada passo;
+// done(resultado, erro) no final (resultado = texto da resposta).
+function runClaudeStream(prompt, onLog, done) {
+  let child;
+  try {
+    child = spawn(CLAUDE_BIN, CLAUDE_ARGS_STREAM,
+      { cwd: WORKSPACE, shell: process.platform === "win32", windowsHide: true });
+  } catch (e) { return done(null, e.message); }
+  let buf = "", err = "", resultado = null;
+  try { child.stdin.write(prompt); child.stdin.end(); } catch {}
+  child.stdout.on("data", (b) => {
+    buf += b.toString();
+    let i;
+    while ((i = buf.indexOf("\n")) >= 0) {
+      const linha = buf.slice(0, i).trim(); buf = buf.slice(i + 1);
+      if (!linha) continue;
+      let j = null; try { j = JSON.parse(linha); } catch { continue; }
+      if (j.type === "result" && j.result != null) resultado = String(j.result);
+      const t = eventoAmigavel(j); if (t) onLog(t);
+    }
+  });
+  child.stderr.on("data", (b) => (err += b.toString()));
+  child.on("error", (e) => done(null, e.message));
+  child.on("close", () =>
+    done(resultado, resultado ? null : (err.trim() || "o assistente não devolveu resultado")));
+}
+
 // Extrai o primeiro objeto JSON da resposta (bloco ```json ou { ... }).
 function extractJson(text) {
   if (!text) return null;
@@ -726,11 +788,13 @@ const server = http.createServer((req, res) => {
     const chunks = [];
     req.on("data", (c) => chunks.push(c));
     req.on("end", () => {
-      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      // NDJSON: uma linha por evento, para o painel mostrar o progresso ao vivo.
+      res.writeHead(200, { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-cache" });
+      const linha = (o) => { try { res.write(JSON.stringify(o) + "\n"); } catch {} };
       let body = {};
       try { body = JSON.parse(Buffer.concat(chunks).toString() || "{}"); } catch {}
       const jobs = (body.jobs || []).slice(0, 20);
-      if (!jobs.length) return res.end(JSON.stringify({ erro: "nenhuma vaga selecionada" }));
+      if (!jobs.length) { linha({ erro: "nenhuma vaga selecionada" }); return res.end(); }
       const lista = jobs.map((j, i) => (i + 1) + ". " + (j.title || "") + " — " + (j.company || "") + " — " + j.url).join("\n");
       const prompt =
         'Compare estas vagas com o meu perfil e currículo atuais (leia CLAUDE.md e ' +
@@ -741,11 +805,12 @@ const server = http.createServer((req, res) => {
         'Responda ESTRITAMENTE com UM bloco JSON, sem texto fora dele:\n' +
         '{"adicionaveis":[{"item":"<curto>","sugestao":"<o que escrever no CV>","vagas":[<números 1..N que isso ajuda>]}],' +
         '"lacunas":[{"item":"<curto>","explicacao":"<por que não dá para adicionar>"}]}\nTextos em português.';
-      runClaudeCollect(prompt, (out, err) => {
-        if (err) return res.end(erroDetalhado("falha ao executar o assistente", out, err));
+      let ultimo = "";
+      runClaudeStream(prompt, (t) => { if (t !== ultimo) { ultimo = t; linha({ log: t }); } }, (out, err) => {
+        if (err) { linha({ erro: "falha ao executar o assistente", detalhe: String(err).slice(-1500) }); return res.end(); }
         const j = extractJson(out);
-        if (!j) return res.end(erroDetalhado("não consegui interpretar a análise", out, err));
-        res.end(JSON.stringify(j));
+        if (!j) { linha({ erro: "não consegui interpretar a análise", detalhe: String(out || "").slice(-1500) }); return res.end(); }
+        linha({ fim: j }); res.end();
       });
     });
     return;
@@ -756,13 +821,15 @@ const server = http.createServer((req, res) => {
     const chunks = [];
     req.on("data", (c) => chunks.push(c));
     req.on("end", () => {
-      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      // Responde em NDJSON (uma linha por evento) para o painel mostrar progresso ao vivo.
+      res.writeHead(200, { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-cache" });
+      const linha = (o) => { try { res.write(JSON.stringify(o) + "\n"); } catch {} };
       let body = {};
       try { body = JSON.parse(Buffer.concat(chunks).toString() || "{}"); } catch {}
       const items = (body.items || []).map(String).filter(Boolean);
       const jobs = (body.jobs || []).slice(0, 20);
-      if (!items.length) return res.end(JSON.stringify({ erro: "nenhum item selecionado" }));
-      if (!jobs.length) return res.end(JSON.stringify({ erro: "nenhuma vaga selecionada" }));
+      if (!items.length) { linha({ erro: "nenhum item selecionado" }); return res.end(); }
+      if (!jobs.length) { linha({ erro: "nenhuma vaga selecionada" }); return res.end(); }
       const lista = jobs.map((j, i) => (i + 1) + ". " + (j.title || "") + " — " + (j.company || "") + " — " + j.url).join("\n");
       const prompt =
         'Eu confirmo que TENHO de verdade estes itens (marquei no painel), que faltavam no meu currículo:\n- ' +
@@ -773,11 +840,12 @@ const server = http.createServer((req, res) => {
         'job_scraper/seen_jobs.json:\n' + lista + '\n\n' +
         'Responda ESTRITAMENTE com UM bloco JSON, sem texto fora dele: ' +
         '{"resultados":[{"url":"<url>","notaAntes":<n>,"notaDepois":<n>}],"resumo":"<uma frase do que mudou>"}.';
-      runClaudeCollect(prompt, (out, err) => {
-        if (err) return res.end(erroDetalhado("falha ao executar o assistente", out, err));
+      let ultimo = "";
+      runClaudeStream(prompt, (t) => { if (t !== ultimo) { ultimo = t; linha({ log: t }); } }, (out, err) => {
+        if (err) { linha({ erro: "falha ao executar o assistente", detalhe: String(err).slice(-1500) }); return res.end(); }
         const j = extractJson(out);
-        if (!j) return res.end(erroDetalhado("não consegui confirmar o resultado", out, err));
-        res.end(JSON.stringify(j));
+        if (!j) { linha({ erro: "não consegui confirmar o resultado", detalhe: String(out || "").slice(-1500) }); return res.end(); }
+        linha({ fim: j }); res.end();
       });
     });
     return;
