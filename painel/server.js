@@ -1479,6 +1479,25 @@ const server = http.createServer((req, res) => {
   res.end("não encontrado");
 });
 
+// Porta ocupada quase sempre significa "o painel já está aberto" — clicar no atalho
+// duas vezes é o caminho normal para cair aqui. Sem este tratamento, o Node cospe um
+// stack trace de EADDRINUSE, que não diz nada a quem só quer usar o painel.
+server.on("error", (e) => {
+  if (e.code !== "EADDRINUSE") {
+    console.log("\n  Não consegui abrir o painel: " + e.message + "\n");
+    process.exit(1);
+  }
+  console.log("\n  ============================================================");
+  console.log("   O PAINEL JÁ ESTÁ ABERTO");
+  console.log("  ============================================================\n");
+  console.log("  Já existe um painel rodando nesta máquina, então este aqui não");
+  console.log("  precisa subir. Use a aba que abriu no navegador:\n");
+  console.log(`      http://${HOST}:${PORT}\n`);
+  console.log("  Se o painel não responder, feche a OUTRA janela preta do painel");
+  console.log("  (ou reinicie o computador) e abra este atalho de novo.\n");
+  process.exit(0);   // saída limpa: é situação normal, não é falha
+});
+
 server.listen(PORT, HOST, () => {
   console.log(`\n  Painel de Candidaturas rodando em  http://${HOST}:${PORT}\n`);
   console.log("  Deixe esta janela aberta enquanto usa o painel.");
