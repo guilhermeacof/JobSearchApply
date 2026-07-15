@@ -58,9 +58,12 @@
     if (textoDe(pai)) return textoDe(pai);
     const fs = el.closest("fieldset");
     if (fs && textoDe(fs.querySelector("legend"))) return textoDe(fs.querySelector("legend"));
-    // Último recurso: o texto logo acima do campo (padrão comum em formulários).
+    // Texto em volta do campo (padrão comum em formulários). Só serve se tiver TEXTO:
+    // sem o teste de vazio, uma <div> sem texto devolvia "" — e o campo, ficando sem
+    // rótulo, era descartado antes de tentar o name/placeholder. Era o que acontecia
+    // com o telefone da InHire, que não tem <label>: o campo simplesmente sumia.
     const grupo = el.closest("div,section,li");
-    if (grupo && textoDe(grupo).length < 300) return textoDe(grupo);
+    if (grupo && textoDe(grupo) && textoDe(grupo).length < 300) return textoDe(grupo);
     // Dentro de shadow DOM o campo costuma estar sozinho na sua raiz, sem nada acima:
     // aí quem carrega o rótulo é o componente que hospeda o shadow (o host).
     const host = raiz.host;
@@ -68,6 +71,7 @@
       const t = host.getAttribute("label") || textoDe(host);
       if (t && t.length < 300) return String(t).replace(/\s+/g, " ").trim();
     }
+    // Sem rótulo nenhum na tela, o name do campo é a última pista ("phone", "email").
     return el.name || el.placeholder || "";
   }
 

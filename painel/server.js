@@ -42,6 +42,11 @@ const ANSWERS_FILE = path.join(WORKSPACE, "documents", "form_answers.json");
 // palavra em inglês no rótulo, "City*" não casa com "Cidade / Estado" (zero palavras em
 // comum) e o campo fica vazio. Ao carregar as duas línguas, o rótulo casa dos dois lados.
 const CAMPOS_SUGERIDOS = [
+  // Os três convivem porque os formulários se dividem em dois mundos: os de fora pedem
+  // "First name"/"Last name" separados (SmartRecruiters), os daqui pedem "Nome completo"
+  // num campo só (InHire, Gupy). Sem o campo completo, um form brasileiro receberia só
+  // o primeiro nome — ou nada, que foi o que aconteceu na vaga da Luby.
+  "Nome completo (Full name)",
   "Nome (First name)",
   "Sobrenome (Last name)",
   "E-mail (Email)",
